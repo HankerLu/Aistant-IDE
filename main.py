@@ -56,6 +56,7 @@ class Block(QGraphicsItem):
         super().__init__()
         print("Block:__init__", idx)
         self.idx = idx
+        self.input_idx_list = []
         self.x = x
         self.y = y
         self.width = width
@@ -75,6 +76,9 @@ class Block(QGraphicsItem):
         painter.setPen(pen)
         painter.setBrush(brush)
         painter.drawRect(self.boundingRect())
+
+    def reg_new_input(self, input_idx):
+        self.input_idx_list.append(input_idx)
 
 class Connection(QGraphicsPathItem):
     def __init__(self, start_item, end_item):
@@ -153,6 +157,7 @@ class ConnectionArrow(QGraphicsPathItem):
     
     def set_end_item(self, item):
         self.end_item = item
+        self.end_item.reg_new_input(self.start_item.idx)
         self.update_path_with_both_item()
     
 class DiagramScene(QGraphicsScene):
@@ -227,8 +232,12 @@ class DiagramScene(QGraphicsScene):
             item = self.itemAt(event.scenePos(), QTransform())
             if isinstance(item, Block) and item != self.start_item:
                 print("DiagramScene:mouseReleaseEvent: line_connecting: isinstance(item, Block)")
+                for idx in item.input_idx_list:
+                    if idx == self.connection_arrow.start_item.idx:
+                        print("connection_arrow already exists.")
+                        self.removeItem(self.connection_arrow)
+                        return
                 self.connection_arrow.set_end_item(item)
-                self.addItem(self.connection_arrow)
             else:
                 print("DiagramScene:mouseReleaseEvent: line_connecting: not isinstance(item, Block)")
                 self.removeItem(self.connection_arrow)
