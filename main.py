@@ -2,7 +2,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal,QThread, QRectF
 from PyQt5.QtWidgets import QFileDialog, QShortcut, QGraphicsPathItem
-from PyQt5.QtGui import QTextCharFormat, QColor, QTextOption, QTransform, QPen, QPainterPath
+from PyQt5.QtGui import QTextCharFormat, QColor, QTextOption, QTransform, QPen, QPainterPath, QBrush
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsView
 from PyQt5.Qt import Qt
 import sys
@@ -64,7 +64,14 @@ class Block(QGraphicsItem):
         return QRectF(self.x, self.y, self.width, self.height)
 
     def paint(self, painter, option, widget):
-        painter.fillRect(self.boundingRect(), self.color)
+        print("Block:paint")
+        # painter.fillRect(self.boundingRect(), self.color)
+        pen = QPen(Qt.black)
+        pen.setWidth(2)
+        brush = QBrush(Qt.transparent)
+        painter.setPen(pen)
+        painter.setBrush(brush)
+        painter.drawRect(self.boundingRect())
 
 class Connection(QGraphicsPathItem):
     def __init__(self, start_item, end_item):
