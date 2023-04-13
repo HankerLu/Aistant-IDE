@@ -100,9 +100,9 @@ class Connection(QGraphicsPathItem):
     def paint(self, painter, option, widget):
         self.update_path()
 
-class ConnectionArrow(QGraphicsPathItem):
+class LinePathWithArrow(QGraphicsPathItem):
     def __init__(self, start_item = None, end_item = None, parent=None):
-        super(ConnectionArrow, self).__init__(parent)
+        super(LinePathWithArrow, self).__init__(parent)
         self.start_item = start_item
         self.end_item = end_item
         self.setZValue(-1)
@@ -168,7 +168,7 @@ class DiagramScene(QGraphicsScene):
         self.start_item = None
         self.end_item = None
         self.connection = None
-        self.connection_arrow = None
+        self.line_path_arrow = None
         self.last_clicked_item_idx = 0
         self.parent = parent
 
@@ -198,8 +198,8 @@ class DiagramScene(QGraphicsScene):
             self.end_item = None
             self.connection = None
             self.line_connecting = True
-            self.connection_arrow = ConnectionArrow(item)
-            self.addItem(self.connection_arrow)
+            self.line_path_arrow = LinePathWithArrow(item)
+            self.addItem(self.line_path_arrow)
 
         super().mousePressEvent(event)
 
@@ -210,7 +210,7 @@ class DiagramScene(QGraphicsScene):
             self.connection.update_path()
         elif self.line_connecting:
             print("DiagramScene:mouseMoveEvent: line_connecting")
-            self.connection_arrow.update_path_by_end_pos(event.scenePos())
+            self.line_path_arrow.update_path_by_end_pos(event.scenePos())
             # self.connection.end_item = event.scenePos()
             # self.connection.update_path()
 
@@ -233,21 +233,21 @@ class DiagramScene(QGraphicsScene):
             if isinstance(item, Block) and item != self.start_item:
                 print("DiagramScene:mouseReleaseEvent: line_connecting: isinstance(item, Block)")
                 for idx in item.input_idx_list:
-                    if idx == self.connection_arrow.start_item.idx:
-                        print("connection_arrow already exists.")
-                        self.removeItem(self.connection_arrow)
+                    if idx == self.line_path_arrow.start_item.idx:
+                        print("line_path_arrow already exists.")
+                        self.removeItem(self.line_path_arrow)
                         return
-                self.connection_arrow.set_end_item(item)
+                self.line_path_arrow.set_end_item(item)
             else:
                 print("DiagramScene:mouseReleaseEvent: line_connecting: not isinstance(item, Block)")
-                self.removeItem(self.connection_arrow)
+                self.removeItem(self.line_path_arrow)
 
         self.item_moving = False
         self.start_item = None
         self.end_item = None
         self.connection = None
         self.line_connecting = False
-        self.connection_arrow = None
+        self.line_path_arrow = None
 
         super().mouseReleaseEvent(event)
 
