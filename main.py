@@ -103,9 +103,7 @@ class ConnectionArrow(QGraphicsPathItem):
         self.end_item = end_item
         self.setZValue(-1)
         
-        self.update_path()
-        
-    def update_path(self):
+    def update_path_with_both_item(self):
         if self.start_item is None or self.end_item is None:
             return
         path = QPainterPath(self.start_item.pos())
@@ -155,7 +153,7 @@ class ConnectionArrow(QGraphicsPathItem):
     
     def set_end_item(self, item):
         self.end_item = item
-        self.update_path()
+        self.update_path_with_both_item()
     
 class DiagramScene(QGraphicsScene):
     def __init__(self, parent=None):
@@ -229,7 +227,7 @@ class DiagramScene(QGraphicsScene):
             item = self.itemAt(event.scenePos(), QTransform())
             if isinstance(item, Block) and item != self.start_item:
                 print("DiagramScene:mouseReleaseEvent: line_connecting: isinstance(item, Block)")
-                self.connection_arrow(item)
+                self.connection_arrow.set_end_item(item)
                 self.addItem(self.connection_arrow)
             else:
                 print("DiagramScene:mouseReleaseEvent: line_connecting: not isinstance(item, Block)")
