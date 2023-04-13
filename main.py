@@ -76,29 +76,29 @@ class Block(QGraphicsItem):
         painter.setBrush(brush)
         painter.drawRect(self.boundingRect())
 
-# class Connection(QGraphicsPathItem):
-#     def __init__(self, start_item, end_item):
-#         super().__init__()
-#         print("Connection:__init__")
-#         self.start_item = start_item
-#         self.end_item = end_item
-#         self.setPen(QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+class Connection(QGraphicsPathItem):
+    def __init__(self, start_item, end_item):
+        super().__init__()
+        print("Connection:__init__")
+        self.start_item = start_item
+        self.end_item = end_item
+        self.setPen(QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
 
-#     def update_path(self):
-#         start_pos = self.mapFromItem(self.start_item, self.start_item.width / 2, self.start_item.height / 2)
-#         end_pos = self.mapFromItem(self.end_item, self.end_item.width / 2, self.end_item.height / 2)
-#         end_pos = self.mapFromItem(self.end_item, self.end_item.width / 4, self.end_item.height / 4)
-#         path = QPainterPath(start_pos)
-#         path.lineTo(end_pos)
-#         self.setPath(path)
-#         print("Connection:update_path", start_pos, end_pos)
+    def update_path(self):
+        start_pos = self.mapFromItem(self.start_item, self.start_item.width / 2, self.start_item.height / 2)
+        end_pos = self.mapFromItem(self.end_item, self.end_item.width / 2, self.end_item.height / 2)
+        end_pos = self.mapFromItem(self.end_item, self.end_item.width / 4, self.end_item.height / 4)
+        path = QPainterPath(start_pos)
+        path.lineTo(end_pos)
+        self.setPath(path)
+        print("Connection:update_path", start_pos, end_pos)
 
-#     def paint(self, painter, option, widget):
-#         self.update_path()
+    def paint(self, painter, option, widget):
+        self.update_path()
 
-class ConnectionLine(QGraphicsPathItem):
+class ConnectionArrow(QGraphicsPathItem):
     def __init__(self, start_item, end_item, parent=None):
-        super(ConnectionLine, self).__init__(parent)
+        super(ConnectionArrow, self).__init__(parent)
         self.start_item = start_item
         self.end_item = end_item
         self.setZValue(-1)
@@ -132,8 +132,8 @@ class ConnectionLine(QGraphicsPathItem):
 class DiagramScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(None)
+        self.line_connecting = False
         self.item_moving = False
-        self.line_painting = False
         self.start_item = None
         self.end_item = None
         self.connection = None
@@ -153,32 +153,18 @@ class DiagramScene(QGraphicsScene):
             self.last_clicked_item_idx = item.idx
             self.item_moving = True
             self.start_item = item
-            self.connection = ConnectionLine(self.start_item, self.start_item)
-            self.addItem(self.connection)
+            self.line_connecting = False
+            self.connection = Connection(self.start_item, self.start_item)
+            self.addItem(self.connection)                            
+
         elif isinstance(item, Block):
             print("isinstance(item, Block): ", item.idx)
-            pos = event.pos()
-            distances = [
-                abs(pos.x() - item.boundingRect().left()),
-                abs(pos.x() - item.boundingRect().right()),
-                abs(pos.y() - item.boundingRect().top()),
-                abs(pos.y() - item.boundingRect().bottom())
-            ]
-            min_distance = min(distances)
-
-            if min_distance < 15:
-                print("Clicked near the edge")
-                self.item_moving = False
-                self.start_item = item
-                self.end_item = None
-                self.connection = None
-                self.line_painting = True
-            else:
-                print("Clicked inside the item")
-                self.item_moving = False
-                self.start_item = None
-                self.end_item = None
-                self.connection = None
+            print("Clicked near the edge")
+            self.item_moving = False
+            self.start_item = item
+            self.end_item = None
+            self.connection = None
+            self.line_connecting = True
 
         super().mousePressEvent(event)
 
@@ -187,22 +173,42 @@ class DiagramScene(QGraphicsScene):
             # print("DiagramScene:mouseMoveEvent")
             super().mouseMoveEvent(event)
             self.connection.update_path()
+        elif self.line_connecting:
+            print("DiagramScene:mouseMoveEvent: line_connecting")
+            # self.connection.end_item = event.scenePos()
+            # self.connection.update_path()
 
     def mouseReleaseEvent(self, event):
         print("DiagramScene:mouseReleaseEvent")
         if self.item_moving:
+            print("DiagramScene:mouseReleaseEvent: item_moving")
             item = self.itemAt(event.scenePos(), QTransform())
             if isinstance(item, Block) and item != self.start_item:
+                print("DiagramScene:mouseReleaseEvent: item_moving: isinstance(item, Block)")
                 self.end_item = item
                 self.connection.end_item = self.end_item
                 self.connection.update_path()
             else:
+                print("DiagramScene:mouseReleaseEvent: item_moving: not isinstance(item, Block)")
+                self.removeItem(self.connection)
+
+        elif self.line_connecting == True:
+            print("DiagramScene:mouseReleaseEvent: line_connecting")
+            item = self.itemAt(event.scenePos(), QTransform())
+            if isinstance(item, Block) and item != self.start_item:
+                print("DiagramScene:mouseReleaseEvent: line_connecting: isinstance(item, Block)")
+                self.end_item = item
+                self.connection = ConnectionArrow(self.start_item, self.end_item)
+                self.addItem(self.connection)
+            else:
+                print("DiagramScene:mouseReleaseEvent: line_connecting: not isinstance(item, Block)")
                 self.removeItem(self.connection)
 
         self.item_moving = False
         self.start_item = None
         self.end_item = None
         self.connection = None
+        self.line_connecting = False
 
         super().mouseReleaseEvent(event)
 
