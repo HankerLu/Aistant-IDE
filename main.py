@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QObject, pyqtSignal,QThread, QRectF
+from PyQt5.QtCore import QObject, pyqtSignal,QThread, QRectF, QPointF
 from PyQt5.QtWidgets import QFileDialog, QShortcut, QGraphicsPathItem, QGraphicsTextItem
 from PyQt5.QtGui import QTransform, QPen, QPainterPath, QBrush, QDoubleValidator, QIntValidator, QFont
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsView
@@ -14,6 +14,7 @@ import openai
 import threading
 import logging
 import os
+import math
 
 log_num = 0
 for file in os.listdir():
@@ -75,28 +76,64 @@ class Block(QGraphicsItem):
         painter.setBrush(brush)
         painter.drawRect(self.boundingRect())
 
-class Connection(QGraphicsPathItem):
-    def __init__(self, start_item, end_item):
-        super().__init__()
+# class Connection(QGraphicsPathItem):
+#     def __init__(self, start_item, end_item):
+#         super().__init__()
+#         print("Connection:__init__")
+#         self.start_item = start_item
+#         self.end_item = end_item
+#         self.setPen(QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+
+#     def update_path(self):
+#         start_pos = self.mapFromItem(self.start_item, self.start_item.width / 2, self.start_item.height / 2)
+#         end_pos = self.mapFromItem(self.end_item, self.end_item.width / 2, self.end_item.height / 2)
+#         end_pos = self.mapFromItem(self.end_item, self.end_item.width / 4, self.end_item.height / 4)
+#         path = QPainterPath(start_pos)
+#         path.lineTo(end_pos)
+#         self.setPath(path)
+#         print("Connection:update_path", start_pos, end_pos)
+
+#     def paint(self, painter, option, widget):
+#         self.update_path()
+
+class ConnectionLine(QGraphicsPathItem):
+    def __init__(self, start_item, end_item, parent=None):
+        super(ConnectionLine, self).__init__(parent)
         self.start_item = start_item
         self.end_item = end_item
-        self.setPen(QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-
-    def update_path(self):
-        start_pos = self.mapFromItem(self.start_item, self.start_item.width / 2, self.start_item.height / 2)
-        end_pos = self.mapFromItem(self.end_item, self.end_item.width / 2, self.end_item.height / 2)
-        path = QPainterPath(start_pos)
-        path.lineTo(end_pos)
-        self.setPath(path)
-
-    def paint(self, painter, option, widget):
+        self.setZValue(-1)
+        
         self.update_path()
-
-
+        
+    def update_path(self):
+        path = QPainterPath(self.start_item.pos())
+        path.lineTo(self.end_item.pos())
+        
+        # 添加箭头
+        arrow_size = 10
+        angle = self.line_angle()
+        arrow_p1 = self.end_item.pos() + QPointF(math.sin(angle - math.pi / 3) * arrow_size,
+                                                 math.cos(angle - math.pi / 3) * arrow_size)
+        arrow_p2 = self.end_item.pos() + QPointF(math.sin(angle - math.pi + math.pi / 3) * arrow_size,
+                                                 math.cos(angle - math.pi + math.pi / 3) * arrow_size)
+        path.moveTo(self.end_item.pos())
+        path.lineTo(arrow_p1)
+        path.moveTo(self.end_item.pos())
+        path.lineTo(arrow_p2)
+        
+        self.setPath(path)
+        
+    def line_angle(self):
+        dx = self.end_item.pos().x() - self.start_item.pos().x()
+        dy = self.end_item.pos().y() - self.start_item.pos().y()
+        angle = math.atan2(-dy, dx)
+        return angle
+    
 class DiagramScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(None)
         self.item_moving = False
+        self.line_painting = False
         self.start_item = None
         self.end_item = None
         self.connection = None
@@ -104,12 +141,11 @@ class DiagramScene(QGraphicsScene):
         self.parent = parent
 
     def mousePressEvent(self, event):
-        print("DiagramScene:mousePressEvent", event.scenePos())
+        # print("DiagramScene:mousePressEvent", event.scenePos())
         item = self.itemAt(event.scenePos(), QTransform())
-        if isinstance(item, Block) or isinstance(item, QGraphicsTextItem):
-            if isinstance(item, QGraphicsTextItem):
-                item = item.parentItem()
-            print("DiagramScene:mousePressEvent:isi nstance(item, Block): ", item.idx)
+        if isinstance(item, QGraphicsTextItem):
+            item = item.parentItem()
+            print("QGraphicsTextItem: ", item.idx)
             if self.parent.current_agent_idx != item.idx:
                 self.parent.current_agent_idx = item.idx
                 self.parent.aistant_update_agent_UI()
@@ -117,19 +153,38 @@ class DiagramScene(QGraphicsScene):
             self.last_clicked_item_idx = item.idx
             self.item_moving = True
             self.start_item = item
-            self.connection = Connection(self.start_item, self.start_item)
+            self.connection = ConnectionLine(self.start_item, self.start_item)
             self.addItem(self.connection)
-        else:
-            self.item_moving = False
-            self.start_item = None
-            self.end_item = None
-            self.connection = None
+        elif isinstance(item, Block):
+            print("isinstance(item, Block): ", item.idx)
+            pos = event.pos()
+            distances = [
+                abs(pos.x() - item.boundingRect().left()),
+                abs(pos.x() - item.boundingRect().right()),
+                abs(pos.y() - item.boundingRect().top()),
+                abs(pos.y() - item.boundingRect().bottom())
+            ]
+            min_distance = min(distances)
+
+            if min_distance < 15:
+                print("Clicked near the edge")
+                self.item_moving = False
+                self.start_item = item
+                self.end_item = None
+                self.connection = None
+                self.line_painting = True
+            else:
+                print("Clicked inside the item")
+                self.item_moving = False
+                self.start_item = None
+                self.end_item = None
+                self.connection = None
 
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self.item_moving:
-            print("DiagramScene:mouseMoveEvent")
+            # print("DiagramScene:mouseMoveEvent")
             super().mouseMoveEvent(event)
             self.connection.update_path()
 
