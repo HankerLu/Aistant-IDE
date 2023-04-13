@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal,QThread, QRectF
-from PyQt5.QtWidgets import QFileDialog, QShortcut
-from PyQt5.QtGui import QTextCharFormat, QColor, QTextOption
+from PyQt5.QtWidgets import QFileDialog, QShortcut, QGraphicsPathItem
+from PyQt5.QtGui import QTextCharFormat, QColor, QTextOption, QTransform, QPen, QPainterPath
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsView
 from PyQt5.Qt import Qt
 import sys
@@ -66,6 +66,72 @@ class Block(QGraphicsItem):
     def paint(self, painter, option, widget):
         painter.fillRect(self.boundingRect(), self.color)
 
+class Connection(QGraphicsPathItem):
+    def __init__(self, start_item, end_item):
+        super().__init__()
+        self.start_item = start_item
+        self.end_item = end_item
+        self.setPen(QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+
+    def update_path(self):
+        start_pos = self.mapFromItem(self.start_item, self.start_item.width / 2, self.start_item.height / 2)
+        end_pos = self.mapFromItem(self.end_item, self.end_item.width / 2, self.end_item.height / 2)
+        path = QPainterPath(start_pos)
+        path.lineTo(end_pos)
+        self.setPath(path)
+
+    def paint(self, painter, option, widget):
+        self.update_path()
+
+
+class DiagramScene(QGraphicsScene):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.item_moving = False
+        self.start_item = None
+        self.end_item = None
+        self.connection = None
+
+    def mousePressEvent(self, event):
+        print("DiagramScene:mousePressEvent")
+        item = self.itemAt(event.scenePos(), QTransform())
+        if isinstance(item, Block):
+            self.item_moving = True
+            self.start_item = item
+            self.connection = Connection(self.start_item, self.start_item)
+            self.addItem(self.connection)
+        else:
+            self.item_moving = False
+            self.start_item = None
+            self.end_item = None
+            self.connection = None
+
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        print("DiagramScene:mouseMoveEvent")
+        if self.item_moving:
+            super().mouseMoveEvent(event)
+            self.connection.update_path()
+
+    def mouseReleaseEvent(self, event):
+        print("DiagramScene:mouseReleaseEvent")
+        if self.item_moving:
+            item = self.itemAt(event.scenePos(), QTransform())
+            if isinstance(item, Block) and item != self.start_item:
+                self.end_item = item
+                self.connection.end_item = self.end_item
+                self.connection.update_path()
+            else:
+                self.removeItem(self.connection)
+
+        self.item_moving = False
+        self.start_item = None
+        self.end_item = None
+        self.connection = None
+
+        super().mouseReleaseEvent(event)
+
 class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
     def __init__(self) -> None:
         print("Aistant_IDE init")
@@ -82,7 +148,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
         self.current_agent_idx = 0
         
-        self.current_block = Block(0, 0, 100, 100, Qt.red)
+        self.current_block = Block(0, 0, 120, 50, Qt.black)
         self.current_agent_block_item = {'block': self.current_block, 'block_setting': self.agent_setting}
         self.agent_block_setting_list = []
         self.agent_block_setting_list.append(self.current_agent_block_item)
@@ -101,7 +167,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
         self.aistant_agent_req_thread = AistantThread(self.Aistant_IDE_agent_block_exec)
         self.aistant_agent_req_thread.signal.connect(self.aistant_agent_update_ui_with_output)
-
+        
         self.ui.pushButton_5.clicked.connect(self.aistant_public_update_keyword_exec)
         self.ui.pushButton_7.clicked.connect(self.aistant_public_mask_keyword_toggle_exec)
 
@@ -109,6 +175,14 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.aistant_show_public_setting_status = False
 
         self.ui.pushButton_4.clicked.connect(self.aistant_clear_public_output_exec)
+
+        self.ui.pushButton.clicked.connect(self.aistant_create_agent_exec)
+        self.ui.pushButton_3.clicked.connect(self.aistant_remove_agent_exec)
+
+# initial graphic view
+        self.aistant_graphics_scene = DiagramScene()
+        self.ui.graphicsView.setScene(self.aistant_graphics_scene)
+        self.aistant_graphics_scene.addItem(self.current_block)
 
 # update public environment setting(openai, etc, ...)
         cur_public_key = self.public_setting.aistant_setting_public_get_cur_key_val()
@@ -246,6 +320,12 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
     def aistant_clear_public_output_exec(self):
         print('aistant_clear_public_output_exec')
         self.ui.textEdit_2.clear()
+
+    def aistant_create_agent_exec(self):
+        print('aistant_create_agent_exec')
+        
+    def aistant_remove_agent_exec(self):
+        print('aistant_remove_agent_exec')
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

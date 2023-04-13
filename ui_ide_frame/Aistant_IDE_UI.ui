@@ -112,14 +112,14 @@
                 <item>
                  <widget class="QPushButton" name="pushButton">
                   <property name="text">
-                   <string>add output</string>
+                   <string>add agent</string>
                   </property>
                  </widget>
                 </item>
                 <item>
                  <widget class="QPushButton" name="pushButton_3">
                   <property name="text">
-                   <string>remove output</string>
+                   <string>remove agent</string>
                   </property>
                  </widget>
                 </item>
