@@ -2,10 +2,10 @@
 import json
 import os
 class Aistant_Agent_Setting():
-    def __init__(self):
+    def __init__(self, name = 'Agent_0'):
         print("Aistant_Setting init.")
 
-        self.aistant_ide_agent_name = 'Agent'
+        self.aistant_ide_agent_name = name
         
         self.aistant_ide_function_prompt = 'Hello'
 
@@ -209,14 +209,8 @@ class Aistant_Public_Setting():
     def __init__(self):
         self.aistant_public_setting_file_path = 'aistant_public_setting.json'
         self.aistant_public_setting_json_default_content = {
-            "cur_key_value": "error"
+            "cur_key_value": ""
         }
-
-# default public setting 
-        self.aistant_ide_public_json_default_content =   {
-                                                'openai_key_value:': '',
-                                                }
-
 
         self.aistant_public_check_local_setting_and_update_cache()
 
@@ -245,7 +239,7 @@ class Aistant_Public_Setting():
         print("aistant_public_recover_with_default_setting")
         with open(self.aistant_public_setting_file_path, 'w') as f:
             json.dump(self.aistant_public_setting_json_default_content, f)
-        self.aistant_json_tempory_content = self.aistant_public_setting_json_default_content
+        self.aistant_public_json_tempory_content = self.aistant_public_setting_json_default_content
 
     def aistant_public_update_local_file_with_content(self):
         with open(self.aistant_public_setting_file_path, 'w') as f:
@@ -255,8 +249,9 @@ class Aistant_Public_Setting():
     def aistant_setting_public_get_cur_key_val(self):
         try:
             cur_key_val = self.aistant_public_json_tempory_content['cur_key_value']
-        except:
-            cur_key_val = 'error'
+        except KeyError:
+            print("aistant_setting_public_get_cur_key_val. Empty.")
+            cur_key_val = ''
         return cur_key_val
     
     def aistant_setting_public_set_cur_key_val(self, key_val):

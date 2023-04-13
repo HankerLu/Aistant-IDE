@@ -201,7 +201,6 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.ui.pushButton_7.clicked.connect(self.aistant_public_mask_keyword_toggle_exec)
 
         self.ui.pushButton_6.clicked.connect(self.aistant_public_setting_show_toggle_exec)
-        self.aistant_show_public_setting_status = False
 
         self.ui.pushButton_4.clicked.connect(self.aistant_clear_public_output_exec)
 
@@ -211,10 +210,18 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.ui.pushButton_12.clicked.connect(self.aistant_agent_save_config_from_ui_exec)
         self.ui.pushButton_2.clicked.connect(self.aistant_agent_load_config_from_default_exec)
 
+# init toggle execution
+        self.aistant_show_public_setting_status = False
+        self.aistant_password_mode = True
+        self.aistant_public_setting_show_toggle_exec()
+        self.aistant_public_mask_keyword_toggle_exec()
+
 # initial graphic view
         self.aistant_graphics_scene = DiagramScene(self)
         self.ui.graphicsView.setScene(self.aistant_graphics_scene)
         self.aistant_graphics_scene.addItem(self.current_block)
+
+        self.aistant_update_agent_UI()
 
 # update public environment setting(openai, etc, ...)
         cur_public_key = self.public_setting.aistant_setting_public_get_cur_key_val()
@@ -224,7 +231,6 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         else:
             print("[Init]openai api key empty.")
 
-        self.aistant_password_mode = True
         self.ui.lineEdit_3.setText(openai.api_key)
 
     # show main window
@@ -363,7 +369,8 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
                             self.aistant_default_block_geo_config[2], 
                             self.aistant_default_block_geo_config[3], Qt.black, self.current_agent_num)
         self.aistant_graphics_scene.addItem(new_block)
-        new_setting = Aistant_IDE_setting_manage.Aistant_Agent_Setting()
+        new_setting_name = 'Agent_' + str(self.current_agent_num)
+        new_setting = Aistant_IDE_setting_manage.Aistant_Agent_Setting(new_setting_name)
 
         new_agent_block_item = {'block': new_block, 'block_setting': new_setting}
         self.agent_block_setting_list.append(new_agent_block_item)
