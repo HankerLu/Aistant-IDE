@@ -1,8 +1,7 @@
 # Aistant-IDE
 A development tool that combines various LLMs to create your own exclusive AGI.
-
-# Objective
 ---
+# Objective
 This project is for DIY your own AGI. You can use the graphical interface of this project to combine different AI/LLM by dragging and connecting building blocks.
 
 # Download
