@@ -125,6 +125,9 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
     def Aistant_IDE_show(self):
         self.mainwin.show()
 
+    def aistant_agent_update_ui_with_output(self, content):
+        print("aistant_agent_update_ui_with_output: ", content)
+
     def aistant_agent_output_stream_display_exec(self, content):
         cursor = self.ui.textEdit.textCursor()
         cursor.setPosition(len(self.ui.textEdit.toPlainText()))
@@ -243,3 +246,9 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
     def aistant_clear_public_output_exec(self):
         print('aistant_clear_public_output_exec')
         self.ui.textEdit_2.clear()
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    aistant_ide_ui = Aistant_IDE()
+    aistant_ide_ui.Aistant_IDE_show()
+    sys.exit(app.exec_())
