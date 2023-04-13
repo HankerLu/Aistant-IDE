@@ -1,0 +1,9 @@
+dist
+build
+*.spec
+__pycache__
+
+*.json
+*.log
+
+testcase/

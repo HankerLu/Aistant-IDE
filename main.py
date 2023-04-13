@@ -13,6 +13,15 @@ import Aistant_IDE_setting_manage
 import openai
 import threading
 import logging
+import os
+
+log_num = 0
+for file in os.listdir():
+    if file.endswith(".log"):
+        log_num += 1
+log_name = "aistant_ide_" + str(log_num) + ".log"
+print("log_name: ", log_name)
+logging.basicConfig(filename=log_name, level=logging.INFO)
 
 class Writer(QObject):
     write_signal = pyqtSignal(str)
@@ -35,7 +44,6 @@ class AistantThread(QThread):
         # 在线程中执行长时间操作
         if self.run_handle != None:
             ret = self.run_handle()
-            
             print("AistantThread:run_handle. RET: ", ret)
             self.signal.emit(ret)
     
@@ -177,6 +185,8 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
     def aistant_public_UI_update(self, content_in):
         print('aistant_public_UI_update')
         final_output = '\n' + self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name + '\n' + content_in + '\n'
+        # put final output to log
+        logging.info(final_output)
         self.aistant_public_output_writer.write_signal.emit(final_output)
     
     def aistant_public_display_exec(self, content):
