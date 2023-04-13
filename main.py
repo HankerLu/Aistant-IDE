@@ -97,7 +97,7 @@ class Connection(QGraphicsPathItem):
         self.update_path()
 
 class ConnectionArrow(QGraphicsPathItem):
-    def __init__(self, start_item, end_item, parent=None):
+    def __init__(self, start_item = None, end_item = None, parent=None):
         super(ConnectionArrow, self).__init__(parent)
         self.start_item = start_item
         self.end_item = end_item
@@ -106,6 +106,8 @@ class ConnectionArrow(QGraphicsPathItem):
         self.update_path()
         
     def update_path(self):
+        if self.start_item is None or self.end_item is None:
+            return
         path = QPainterPath(self.start_item.pos())
         path.lineTo(self.end_item.pos())
         
@@ -122,12 +124,38 @@ class ConnectionArrow(QGraphicsPathItem):
         path.lineTo(arrow_p2)
         
         self.setPath(path)
+    
+    def update_path_by_end_pos(self, end_pos):
+        path = QPainterPath(self.start_item.pos())
+        path.lineTo(end_pos)
         
+        # 添加箭头
+        arrow_size = 10
+
+        dx = end_pos.x() - self.start_item.pos().x()
+        dy = end_pos.y() - self.start_item.pos().y()
+        angle = math.atan2(-dy, dx)
+
+        arrow_p1 = end_pos + QPointF(math.sin(angle - math.pi / 3) * arrow_size,
+                                                 math.cos(angle - math.pi / 3) * arrow_size)
+        arrow_p2 = end_pos + QPointF(math.sin(angle - math.pi + math.pi / 3) * arrow_size,
+                                                 math.cos(angle - math.pi + math.pi / 3) * arrow_size)
+        path.moveTo(end_pos)
+        path.lineTo(arrow_p1)
+        path.moveTo(end_pos)
+        path.lineTo(arrow_p2)
+        
+        self.setPath(path)
+
     def line_angle(self):
         dx = self.end_item.pos().x() - self.start_item.pos().x()
         dy = self.end_item.pos().y() - self.start_item.pos().y()
         angle = math.atan2(-dy, dx)
         return angle
+    
+    def set_end_item(self, item):
+        self.end_item = item
+        self.update_path()
     
 class DiagramScene(QGraphicsScene):
     def __init__(self, parent=None):
@@ -137,12 +165,14 @@ class DiagramScene(QGraphicsScene):
         self.start_item = None
         self.end_item = None
         self.connection = None
+        self.connection_arrow = None
         self.last_clicked_item_idx = 0
         self.parent = parent
 
     def mousePressEvent(self, event):
         # print("DiagramScene:mousePressEvent", event.scenePos())
         item = self.itemAt(event.scenePos(), QTransform())
+        # move item
         if isinstance(item, QGraphicsTextItem):
             item = item.parentItem()
             print("QGraphicsTextItem: ", item.idx)
@@ -156,15 +186,17 @@ class DiagramScene(QGraphicsScene):
             self.line_connecting = False
             self.connection = Connection(self.start_item, self.start_item)
             self.addItem(self.connection)                            
-
+        # connect item
         elif isinstance(item, Block):
             print("isinstance(item, Block): ", item.idx)
             print("Clicked near the edge")
             self.item_moving = False
-            self.start_item = item
+            self.start_item = None
             self.end_item = None
             self.connection = None
             self.line_connecting = True
+            self.connection_arrow = ConnectionArrow(item)
+            self.addItem(self.connection_arrow)
 
         super().mousePressEvent(event)
 
@@ -175,6 +207,7 @@ class DiagramScene(QGraphicsScene):
             self.connection.update_path()
         elif self.line_connecting:
             print("DiagramScene:mouseMoveEvent: line_connecting")
+            self.connection_arrow.update_path_by_end_pos(event.scenePos())
             # self.connection.end_item = event.scenePos()
             # self.connection.update_path()
 
@@ -191,24 +224,23 @@ class DiagramScene(QGraphicsScene):
             else:
                 print("DiagramScene:mouseReleaseEvent: item_moving: not isinstance(item, Block)")
                 self.removeItem(self.connection)
-
+        # finish connecting line
         elif self.line_connecting == True:
-            print("DiagramScene:mouseReleaseEvent: line_connecting")
             item = self.itemAt(event.scenePos(), QTransform())
             if isinstance(item, Block) and item != self.start_item:
                 print("DiagramScene:mouseReleaseEvent: line_connecting: isinstance(item, Block)")
-                self.end_item = item
-                self.connection = ConnectionArrow(self.start_item, self.end_item)
-                self.addItem(self.connection)
+                self.connection_arrow(item)
+                self.addItem(self.connection_arrow)
             else:
                 print("DiagramScene:mouseReleaseEvent: line_connecting: not isinstance(item, Block)")
-                self.removeItem(self.connection)
+                self.removeItem(self.connection_arrow)
 
         self.item_moving = False
         self.start_item = None
         self.end_item = None
         self.connection = None
         self.line_connecting = False
+        self.connection_arrow = None
 
         super().mouseReleaseEvent(event)
 
