@@ -95,12 +95,13 @@ class Connection(QGraphicsPathItem):
 
 class DiagramScene(QGraphicsScene):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super().__init__(None)
         self.item_moving = False
         self.start_item = None
         self.end_item = None
         self.connection = None
         self.last_clicked_item_idx = 0
+        self.parent = parent
 
     def mousePressEvent(self, event):
         print("DiagramScene:mousePressEvent", event.scenePos())
@@ -109,6 +110,7 @@ class DiagramScene(QGraphicsScene):
             print("DiagramScene:mousePressEvent:isinstance(item, Block): ", item.idx)
             if self.parent.current_agent_idx != item.idx:
                 self.parent.current_agent_idx = item.idx
+                self.parent.aistant_update_agent_UI()
                 # self.parent.agent_setting.update_agent_setting()
             self.last_clicked_item_idx = item.idx
             self.item_moving = True
@@ -365,11 +367,13 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 #update agent UI display
     def aistant_update_agent_UI(self):
         print('aistant_update_agent_UI')
+        tempeture_str = str(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempeture)
+        max_tokens_str = str(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_max_token)
         self.ui.lineEdit.setText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name)
-        self.ui.comboBox_4.setCurrentText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_model_index)
+        self.ui.comboBox_4.setCurrentIndex(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_model_index)
         self.ui.plainTextEdit.setPlainText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_function_prompt)
-        self.ui.lineEdit_2.setText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempeture)
-        self.ui.lineEdit_4.setText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_max_tokens)
+        self.ui.lineEdit_2.setText(tempeture_str)
+        self.ui.lineEdit_4.setText(max_tokens_str)
         self.ui.lineEdit_5.setText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_extern_link)
         self.ui.textEdit.setPlainText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content)
 
