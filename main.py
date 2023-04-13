@@ -51,8 +51,9 @@ class AistantThread(QThread):
         self.signal_int.emit(val)
 
 class Block(QGraphicsItem):
-    def __init__(self, x, y, width, height, color):
+    def __init__(self, x, y, width, height, color, idx):
         super().__init__()
+        self.idx = idx
         self.x = x
         self.y = y
         self.width = width
@@ -154,11 +155,19 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.public_setting = Aistant_IDE_setting_manage.Aistant_Public_Setting()
 
         self.current_agent_idx = 0
-        
-        self.current_block = Block(0, 0, 120, 50, Qt.black)
+
+        self.aistant_default_block_geo_config = (0, 0, 120, 50)
+        self.current_block = Block(self.aistant_default_block_geo_config[0], 
+                                   self.aistant_default_block_geo_config[1], 
+                                   self.aistant_default_block_geo_config[2], 
+                                   self.aistant_default_block_geo_config[3], Qt.black, self.current_agent_idx)
+        self.aistant_y_delta = 0
+
         self.current_agent_block_item = {'block': self.current_block, 'block_setting': self.agent_setting}
         self.agent_block_setting_list = []
         self.agent_block_setting_list.append(self.current_agent_block_item)
+
+        self.current_agent_num = len(self.agent_block_setting_list)
 
         self.statusbar_writer = Writer()
         self.statusbar_writer.write_signal.connect(self.ui.statusbar.showMessage)
@@ -330,6 +339,17 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
     def aistant_create_agent_exec(self):
         print('aistant_create_agent_exec')
+        self.current_agent_num = len(self.agent_block_setting_list)
+        self.aistant_y_delta += (self.aistant_default_block_geo_config[3] + 5)
+        new_block = Block(  self.aistant_default_block_geo_config[0], 
+                            self.aistant_default_block_geo_config[1] + self.aistant_y_delta, 
+                            self.aistant_default_block_geo_config[2], 
+                            self.aistant_default_block_geo_config[3], Qt.black, self.current_agent_num)
+        self.aistant_graphics_scene.addItem(new_block)
+        new_setting = Aistant_IDE_setting_manage.Aistant_Agent_Setting()
+
+        new_agent_block_item = {'block': new_block, 'block_setting': new_setting}
+        self.agent_block_setting_list.append(new_agent_block_item)
         
     def aistant_remove_agent_exec(self):
         print('aistant_remove_agent_exec')
