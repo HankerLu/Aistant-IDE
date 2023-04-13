@@ -109,6 +109,9 @@ class LinePathWithArrow(QGraphicsPathItem):
     def set_start_edge(self, edge):
         self.start_edge = edge
 
+    def set_end_edge(self, edge):
+        self.end_edge = edge
+
     def get_start_point_pos(self):
         ret = self.start_item.pos()
         if self.start_edge == "left":
@@ -120,26 +123,39 @@ class LinePathWithArrow(QGraphicsPathItem):
         elif self.start_edge == "bottom":
             ret = self.mapFromItem(self.start_item, self.start_item.width / 2, self.start_item.height)
         return ret
+    
+    def get_end_point_pos(self):
+        ret = self.end_item.pos()
+        if self.end_edge == "left":
+            ret = self.mapFromItem(self.end_item, 0, self.end_item.height / 2)
+        elif self.end_edge == "right":
+            ret = self.mapFromItem(self.end_item, self.end_item.width, self.end_item.height / 2)
+        elif self.end_edge == "top":
+            ret = self.mapFromItem(self.end_item, self.end_item.width / 2, 0)
+        elif self.end_edge == "bottom":
+            ret = self.mapFromItem(self.end_item, self.end_item.width / 2, self.end_item.height)
+        return ret
 
     def update_path_with_both_item(self):
         if self.start_item is None or self.end_item is None:
             return
         tmp_start_pos = self.get_start_point_pos()
+        tmp_end_pos = self.get_end_point_pos()
         path = QPainterPath(tmp_start_pos)
-        path.lineTo(self.end_item.pos())
+        path.lineTo(tmp_end_pos)
         
         # 添加箭头
         arrow_size = 10
-        dx = self.end_item.pos().x() - tmp_start_pos.x()
-        dy = self.end_item.pos().y() - tmp_start_pos.y()
+        dx = tmp_end_pos.x() - tmp_start_pos.x()
+        dy = tmp_end_pos.y() - tmp_start_pos.y()
         angle = math.atan2(-dy, dx)
-        arrow_p1 = self.end_item.pos() + QPointF(math.sin(angle - math.pi / 3) * arrow_size,
+        arrow_p1 = tmp_end_pos + QPointF(math.sin(angle - math.pi / 3) * arrow_size,
                                                  math.cos(angle - math.pi / 3) * arrow_size)
-        arrow_p2 = self.end_item.pos() + QPointF(math.sin(angle - math.pi + math.pi / 3) * arrow_size,
+        arrow_p2 = tmp_end_pos + QPointF(math.sin(angle - math.pi + math.pi / 3) * arrow_size,
                                                  math.cos(angle - math.pi + math.pi / 3) * arrow_size)
-        path.moveTo(self.end_item.pos())
+        path.moveTo(tmp_end_pos)
         path.lineTo(arrow_p1)
-        path.moveTo(self.end_item.pos())
+        path.moveTo(tmp_end_pos)
         path.lineTo(arrow_p2)
         
         self.setPath(path)
@@ -215,6 +231,8 @@ class DiagramScene(QGraphicsScene):
                 abs(event.scenePos().y() - item.boundingRect().top()),
                 abs(event.scenePos().y() - item.boundingRect().bottom())
             ]
+            for i in range(len(distances)):
+                print(distances[i])
             min_distance = min(distances)
             # find the closest edge
             if min_distance == distances[0]:
@@ -239,7 +257,7 @@ class DiagramScene(QGraphicsScene):
             super().mouseMoveEvent(event)
             self.connection.update_path()
         elif self.line_connecting:
-            print("DiagramScene:mouseMoveEvent: line_connecting")
+            # print("DiagramScene:mouseMoveEvent: line_connecting")
             self.line_path_arrow.update_path_by_end_pos(event.scenePos())
             # self.connection.end_item = event.scenePos()
             # self.connection.update_path()
@@ -262,12 +280,40 @@ class DiagramScene(QGraphicsScene):
             item = self.itemAt(event.scenePos(), QTransform())
             if isinstance(item, Block) and item != self.start_item:
                 print("DiagramScene:mouseReleaseEvent: line_connecting: isinstance(item, Block)")
+                if item.idx == self.line_path_arrow.start_item.idx:
+                    print("end item is the same as start item.")
+                    self.removeItem(self.line_path_arrow)
+                    return
+                
                 for idx in item.input_idx_list:
                     if idx == self.line_path_arrow.start_item.idx:
                         print("line_path_arrow already exists.")
                         self.removeItem(self.line_path_arrow)
                         return
+                distances = [
+                    abs(event.scenePos().x() - item.boundingRect().left()),
+                    abs(event.scenePos().x() - item.boundingRect().right()),
+                    abs(event.scenePos().y() - item.boundingRect().top()),
+                    abs(event.scenePos().y() - item.boundingRect().bottom())
+                ]
+                for i in range(len(distances)):
+                    print(distances[i])
+                min_distance = min(distances)
+                # find the closest edge
+                if min_distance == distances[0]:
+                    print("Clicked near the left edge")
+                    self.line_path_arrow.set_end_edge("left")
+                elif min_distance == distances[1]:
+                    print("Clicked near the right edge")
+                    self.line_path_arrow.set_end_edge("right")
+                elif min_distance == distances[2]:
+                    print("Clicked near the top edge")
+                    self.line_path_arrow.set_end_edge("top")
+                elif min_distance == distances[3]:
+                    print("Clicked near the bottom edge")
+                    self.line_path_arrow.set_end_edge("bottom")
                 self.line_path_arrow.set_end_item(item)
+
             else:
                 print("DiagramScene:mouseReleaseEvent: line_connecting: not isinstance(item, Block)")
                 self.removeItem(self.line_path_arrow)
