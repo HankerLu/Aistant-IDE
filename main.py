@@ -86,12 +86,32 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.aistant_agent_output_writer = Writer()
         self.aistant_agent_output_writer.write_signal.connect(self.aistant_agent_output_stream_display_exec)
 
-        self.aistant_agent_working_flag = True
+        self.aistant_public_output_writer = Writer()
+        self.aistant_public_output_writer.write_signal.connect(self.aistant_public_display_exec)
 
+        self.aistant_agent_working_flag = True
 
         self.aistant_agent_req_thread = AistantThread(self.Aistant_IDE_agent_block_exec)
         self.aistant_agent_req_thread.signal.connect(self.aistant_agent_update_ui_with_output)
 
+        self.ui.pushButton_5.clicked.connect(self.aistant_public_update_keyword_exec)
+        self.ui.pushButton_7.clicked.connect(self.aistant_public_mask_keyword_toggle_exec)
+
+        self.ui.pushButton_6.clicked.connect(self.aistant_public_setting_show_toggle_exec)
+        self.aistant_show_public_setting_status = False
+
+        self.ui.pushButton_4.clicked.connect(self.aistant_clear_public_output_exec)
+
+# update public environment setting(openai, etc, ...)
+        cur_public_key = self.public_setting.aistant_setting_public_get_cur_key_val()
+        if cur_public_key != '':
+            openai.api_key = cur_public_key
+            print("[Init]openai api key update: ", openai.api_key)
+        else:
+            print("[Init]openai api key empty.")
+
+        self.aistant_password_mode = True
+        self.ui.lineEdit_3.setText(openai.api_key)
 
     # show main window
     def Aistant_IDE_show(self):
@@ -153,3 +173,63 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
             self.aistant_agent_working_flag = True
             self.statusbar_writer.write_signal.emit('Agent output stream quit.')
         return ''
+    
+    def aistant_public_UI_update(self, content_in):
+        print('aistant_public_UI_update')
+        final_output = '\n' + self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name + '\n' + content_in + '\n'
+        self.aistant_public_output_writer.write_signal.emit(final_output)
+    
+    def aistant_public_display_exec(self, content):
+        cursor = self.ui.textEdit_2.textCursor()
+        cursor.setPosition(len(self.ui.textEdit_2.toPlainText()))
+        cursor.insertText(content)
+        cursor.setPosition(len(self.ui.textEdit_2.toPlainText()))
+        self.ui.textEdit_2.setTextCursor(cursor)
+
+    def aistant_public_update_keyword_exec(self):
+        print('aistant_public_update_keyword_exec')
+        keyword = self.ui.lineEdit_3.text()
+        if keyword == '':
+            print('keyword is empty')
+            return
+        openai.api_key = keyword
+        self.public_setting.aistant_setting_public_set_cur_key_val(keyword)
+        print('update keyword: ', keyword)
+
+    def aistant_public_mask_keyword_toggle_exec(self):
+        print('aistant_public_mask_keyword_toggle_exec')
+        if self.aistant_password_mode == True:
+            self.ui.lineEdit_3.setEchoMode(QtWidgets.QLineEdit.Normal)
+            self.ui.pushButton_7.setText('Mask')
+            self.aistant_password_mode = False
+        else:
+            self.ui.lineEdit_3.setEchoMode(QtWidgets.QLineEdit.Password)
+            self.ui.pushButton_7.setText('Unmask')
+            self.aistant_password_mode = True
+
+    def aistant_public_setting_show_toggle_exec(self):
+        print('aistant_public_setting_show_toggle_exec')
+        if self.aistant_show_public_setting_status == False:
+            self.ui.label_9.setVisible(True)
+            self.ui.label_10.setVisible(True)
+            self.ui.textEdit_3.setVisible(True)
+            self.ui.label_7.setVisible(True)
+            self.ui.lineEdit_3.setVisible(True)
+            self.ui.pushButton_5.setVisible(True)
+            self.ui.pushButton_7.setVisible(True)
+            self.ui.pushButton_6.setText('Hide')
+            self.aistant_show_public_setting_status = True
+        else:
+            self.ui.label_9.setVisible(False)
+            self.ui.label_10.setVisible(False)
+            self.ui.textEdit_3.setVisible(False)
+            self.ui.label_7.setVisible(False)
+            self.ui.lineEdit_3.setVisible(False)
+            self.ui.pushButton_5.setVisible(False)
+            self.ui.pushButton_7.setVisible(False)
+            self.ui.pushButton_6.setText('Show')
+            self.aistant_show_public_setting_status = False
+
+    def aistant_clear_public_output_exec(self):
+        print('aistant_clear_public_output_exec')
+        self.ui.textEdit_2.clear()
