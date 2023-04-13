@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal,QThread, QRectF
-from PyQt5.QtWidgets import QFileDialog, QShortcut, QGraphicsPathItem
-from PyQt5.QtGui import QTextCharFormat, QColor, QTextOption, QTransform, QPen, QPainterPath, QBrush, QDoubleValidator, QIntValidator
+from PyQt5.QtWidgets import QFileDialog, QShortcut, QGraphicsPathItem, QGraphicsTextItem
+from PyQt5.QtGui import QTransform, QPen, QPainterPath, QBrush, QDoubleValidator, QIntValidator, QFont
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsView
 from PyQt5.Qt import Qt
 import sys
@@ -106,8 +106,10 @@ class DiagramScene(QGraphicsScene):
     def mousePressEvent(self, event):
         print("DiagramScene:mousePressEvent", event.scenePos())
         item = self.itemAt(event.scenePos(), QTransform())
-        if isinstance(item, Block):
-            print("DiagramScene:mousePressEvent:isinstance(item, Block): ", item.idx)
+        if isinstance(item, Block) or isinstance(item, QGraphicsTextItem):
+            if isinstance(item, QGraphicsTextItem):
+                item = item.parentItem()
+            print("DiagramScene:mousePressEvent:isi nstance(item, Block): ", item.idx)
             if self.parent.current_agent_idx != item.idx:
                 self.parent.current_agent_idx = item.idx
                 self.parent.aistant_update_agent_UI()
@@ -126,8 +128,8 @@ class DiagramScene(QGraphicsScene):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
-        print("DiagramScene:mouseMoveEvent")
         if self.item_moving:
+            print("DiagramScene:mouseMoveEvent")
             super().mouseMoveEvent(event)
             self.connection.update_path()
 
@@ -220,6 +222,15 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.aistant_graphics_scene = DiagramScene(self)
         self.ui.graphicsView.setScene(self.aistant_graphics_scene)
         self.aistant_graphics_scene.addItem(self.current_block)
+
+        text_item_content = self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name
+        text_item = QGraphicsTextItem(text_item_content)
+        text_item.setDefaultTextColor(Qt.black)
+        text_item.setFont(QFont('Arial', 12))
+        self.aistant_graphics_scene.addItem(text_item)
+        text_item.setParentItem(self.current_block)
+        text_item.setX(self.current_block.boundingRect().center().x() - text_item.boundingRect().width()/2)
+        text_item.setY(self.current_block.boundingRect().center().y() - text_item.boundingRect().height()/2)
 
         self.aistant_update_agent_UI()
 
@@ -374,7 +385,16 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
         new_agent_block_item = {'block': new_block, 'block_setting': new_setting}
         self.agent_block_setting_list.append(new_agent_block_item)
-        
+
+        text_item_content = new_setting_name
+        text_item = QGraphicsTextItem(text_item_content)
+        text_item.setDefaultTextColor(Qt.black)
+        text_item.setFont(QFont('Arial', 12))
+        self.aistant_graphics_scene.addItem(text_item)
+        text_item.setParentItem(new_block)
+        text_item.setX(new_block.boundingRect().center().x() - text_item.boundingRect().width()/2)
+        text_item.setY(new_block.boundingRect().center().y() - text_item.boundingRect().height()/2)
+
     def aistant_remove_agent_exec(self):
         print('aistant_remove_agent_exec')
 
