@@ -2,7 +2,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal,QThread, QRectF
 from PyQt5.QtWidgets import QFileDialog, QShortcut, QGraphicsPathItem
-from PyQt5.QtGui import QTextCharFormat, QColor, QTextOption, QTransform, QPen, QPainterPath, QBrush
+from PyQt5.QtGui import QTextCharFormat, QColor, QTextOption, QTransform, QPen, QPainterPath, QBrush, QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsView
 from PyQt5.Qt import Qt
 import sys
@@ -193,6 +193,10 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.aistant_agent_req_thread = AistantThread(self.Aistant_IDE_agent_block_exec)
         self.aistant_agent_req_thread.signal.connect(self.aistant_agent_update_ui_with_output)
         
+# set floating point validator
+        self.ui.lineEdit_2.setValidator(QDoubleValidator(0.0, 1.0, 2))
+        self.ui.lineEdit_4.setValidator(QIntValidator(0, 500))
+       
         self.ui.pushButton_5.clicked.connect(self.aistant_public_update_keyword_exec)
         self.ui.pushButton_7.clicked.connect(self.aistant_public_mask_keyword_toggle_exec)
 
@@ -203,6 +207,9 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
         self.ui.pushButton.clicked.connect(self.aistant_create_agent_exec)
         self.ui.pushButton_3.clicked.connect(self.aistant_remove_agent_exec)
+
+        self.ui.pushButton_12.clicked.connect(self.aistant_agent_save_config_from_ui_exec)
+        self.ui.pushButton_2.clicked.connect(self.aistant_agent_load_config_from_default_exec)
 
 # initial graphic view
         self.aistant_graphics_scene = DiagramScene(self)
@@ -376,6 +383,28 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.ui.lineEdit_4.setText(max_tokens_str)
         self.ui.lineEdit_5.setText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_extern_link)
         self.ui.textEdit.setPlainText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content)
+
+    def aistant_agent_save_config_from_ui_exec(self):
+        print('aistant_agent_save_config_from_ui_exec')
+        try:
+            temperatue_lineedit_content = self.ui.lineEdit_2.text()
+            max_token_lineedit_content = self.ui.lineEdit_4.text()
+            if temperatue_lineedit_content == '' or max_token_lineedit_content == '':
+                self.statusbar_writer.write_signal.emit('Please fill in valid num for tempeture and max tokens')
+                return
+
+            self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name = self.ui.lineEdit.text()
+            self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_model_index = self.ui.comboBox_4.currentIndex()
+            self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_function_prompt = self.ui.plainTextEdit.toPlainText()
+            self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempeture = float(self.ui.lineEdit_2.text())
+            self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_max_token = int(self.ui.lineEdit_4.text())
+            self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_extern_link = self.ui.lineEdit_5.text()
+            self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content = self.ui.textEdit.toPlainText()
+        except Exception as e:
+            print('save config error. Error: ', e)
+
+    def aistant_agent_load_config_from_default_exec(self):
+        print('aistant_agent_load_config_from_default_exec')
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
