@@ -53,6 +53,7 @@ class AistantThread(QThread):
 class Block(QGraphicsItem):
     def __init__(self, x, y, width, height, color, idx):
         super().__init__()
+        print("Block:__init__", idx)
         self.idx = idx
         self.x = x
         self.y = y
@@ -65,7 +66,7 @@ class Block(QGraphicsItem):
         return QRectF(self.x, self.y, self.width, self.height)
 
     def paint(self, painter, option, widget):
-        print("Block:paint")
+        # print("Block:paint", self.idx)
         # painter.fillRect(self.boundingRect(), self.color)
         pen = QPen(Qt.black)
         pen.setWidth(2)
@@ -99,11 +100,17 @@ class DiagramScene(QGraphicsScene):
         self.start_item = None
         self.end_item = None
         self.connection = None
+        self.last_clicked_item_idx = 0
 
     def mousePressEvent(self, event):
-        print("DiagramScene:mousePressEvent")
+        print("DiagramScene:mousePressEvent", event.scenePos())
         item = self.itemAt(event.scenePos(), QTransform())
         if isinstance(item, Block):
+            print("DiagramScene:mousePressEvent:isinstance(item, Block): ", item.idx)
+            if self.parent.current_agent_idx != item.idx:
+                self.parent.current_agent_idx = item.idx
+                # self.parent.agent_setting.update_agent_setting()
+            self.last_clicked_item_idx = item.idx
             self.item_moving = True
             self.start_item = item
             self.connection = Connection(self.start_item, self.start_item)
@@ -196,7 +203,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.ui.pushButton_3.clicked.connect(self.aistant_remove_agent_exec)
 
 # initial graphic view
-        self.aistant_graphics_scene = DiagramScene()
+        self.aistant_graphics_scene = DiagramScene(self)
         self.ui.graphicsView.setScene(self.aistant_graphics_scene)
         self.aistant_graphics_scene.addItem(self.current_block)
 
@@ -224,6 +231,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         cursor.insertText(content)
         cursor.setPosition(len(self.ui.textEdit.toPlainText()))
         self.ui.textEdit.setTextCursor(cursor)
+        self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content = self.ui.textEdit.toPlainText()
 
     def aistant_agent_req_trig(self):
         print('aistant_agent_req_trig')
@@ -353,6 +361,17 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         
     def aistant_remove_agent_exec(self):
         print('aistant_remove_agent_exec')
+
+#update agent UI display
+    def aistant_update_agent_UI(self):
+        print('aistant_update_agent_UI')
+        self.ui.lineEdit.setText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name)
+        self.ui.comboBox_4.setCurrentText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_model_index)
+        self.ui.plainTextEdit.setPlainText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_function_prompt)
+        self.ui.lineEdit_2.setText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempeture)
+        self.ui.lineEdit_4.setText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_max_tokens)
+        self.ui.lineEdit_5.setText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_extern_link)
+        self.ui.textEdit.setPlainText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

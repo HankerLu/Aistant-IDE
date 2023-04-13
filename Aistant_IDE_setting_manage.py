@@ -9,11 +9,15 @@ class Aistant_Agent_Setting():
         
         self.aistant_ide_function_prompt = 'Hello'
 
+        self.aistant_ide_model_index = 0
+
         self.aistant_ide_tempeture = 0.7
 
         self.aistant_ide_max_token = 150
 
         self.aistant_ide_extern_link = '' 
+
+        self.aistant_ide_tempory_output_content = ''
 
 # UI option complete list 
         self.chat_model_dict = [
