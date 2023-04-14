@@ -2,7 +2,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal,QThread, QRectF, QPointF
 from PyQt5.QtWidgets import QFileDialog, QShortcut, QGraphicsPathItem, QGraphicsTextItem
-from PyQt5.QtGui import QTransform, QPen, QPainterPath, QBrush, QDoubleValidator, QIntValidator, QFont
+from PyQt5.QtGui import QTransform, QPen, QPainterPath, QBrush, QDoubleValidator, QIntValidator, QFont, QPainter
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsView
 from PyQt5.Qt import Qt
 import sys
@@ -11,10 +11,10 @@ import json
 import Aistant_IDE_UI
 import Aistant_IDE_setting_manage
 import openai
-import threading
 import logging
 import os
 import math
+import time
 from enum import Enum
 
 log_num = 0
@@ -54,7 +54,8 @@ class AistantThread(QThread):
         if self.run_handle != None:
             ret = self.run_handle()
             print("AistantThread:run_handle. RET: ", ret)
-            self.signal.emit(ret)
+            if self.signal != None:
+                self.signal.emit(ret)
     
     def signal_emit(self, val):
         self.signal_int.emit(val)
@@ -72,17 +73,23 @@ class Block(QGraphicsItem):
         self.height = height
         self.color = color
         self.setFlag(QGraphicsItem.ItemIsMovable)
+        self.is_selected = False
 
     def boundingRect(self):
         return QRectF(self.x, self.y, self.width, self.height)
 
     def paint(self, painter, option, widget):
-        # print("Block:paint", self.idx)
+        print("Block:paint", self.idx)
+        if self.is_selected:
+            pen = QPen(Qt.red)
+            pen.setWidth(3)
+            painter.setPen(pen)
+        else:
+            pen = QPen(Qt.black)
+            pen.setWidth(2)
+            painter.setPen(pen)
         # painter.fillRect(self.boundingRect(), self.color)
-        pen = QPen(Qt.black)
-        pen.setWidth(2)
         brush = QBrush(Qt.transparent)
-        painter.setPen(pen)
         painter.setBrush(brush)
         painter.drawRect(self.boundingRect())
 
@@ -91,6 +98,22 @@ class Block(QGraphicsItem):
 
     def reg_new_output(self, output_idx):
         self.output_idx_list.append(output_idx)
+
+    def update_selected(self, is_selected):
+        self.is_selected = is_selected
+    # def update_selected(self):
+    #     pen = QPen(Qt.red)
+    #     pen.setWidth(3)
+    #     painter = QPainter()
+    #     painter.setPen(pen)
+    #     painter.drawRect(self.boundingRect())
+
+    # def update_unselected(self):
+    #     pen = QPen(Qt.black)
+    #     pen.setWidth(2)
+    #     painter = QPainter()
+    #     painter.setPen(pen)
+    #     painter.drawRect(self.boundingRect())
 
 class Connection(QGraphicsPathItem):
     def __init__(self, start_item, end_item):
@@ -316,8 +339,9 @@ class DiagramScene(QGraphicsScene):
         if isinstance(item, QGraphicsTextItem):
             item = item.parentItem()
             print("QGraphicsTextItem: ", item.idx)
-            if self.parent.current_agent_idx != item.idx:
+            if self.parent.current_agent_idx != item.idx and self.parent.aistant_workflow_active_status == False:
                 self.parent.current_agent_idx = item.idx
+                self.parent.aisatnt_update_block_color()
                 self.parent.aistant_update_agent_UI()
                 # self.parent.agent_setting.update_agent_setting()
             self.last_clicked_item_idx = item.idx
@@ -429,6 +453,8 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
         self.current_agent_num = len(self.agent_block_setting_list)
 
+        # self.aisatnt_update_block_color()
+
         self.statusbar_writer = Writer()
         self.statusbar_writer.write_signal.connect(self.ui.statusbar.showMessage)
         self.ui.statusbar.showMessage('Load Aistant IDE completed.')
@@ -491,10 +517,22 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
 # AI workflow
         self.aistant_ide_workflow = []
-        self.aistant_ide_workflow_pos = 0
         self.aistant_ide_workflow_item_num = 0
+        
+        self.aistant_ide_workflow_pos = 0
         self.aistant_first_task_item = None
-        self.aistant_ide_running_status = AistantWorkFlowStatus.WF_IDLE
+        
+
+        self.aistant_ide_running_stage = AistantWorkFlowStatus.WF_IDLE
+
+        self.aistant_workflow_active_status = False
+        self.aistant_workflow_thread_run_flag = True
+
+        self.aistant_public_transferring_in_msg = ''
+        self.aistant_public_transferring_out_msg = ''
+
+        self.aistant_workflow_thread = AistantThread(self.aistant_workflow_thread_exec)
+        self.aistant_workflow_thread.start()
 
 # update public environment setting(openai, etc, ...)
         cur_public_key = self.public_setting.aistant_setting_public_get_cur_key_val()
@@ -505,6 +543,13 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
             print("[Init]openai api key empty.")
 
         self.ui.lineEdit_3.setText(openai.api_key)
+
+# closs event
+        self.mainwin.closeEvent = self.aistant_closeEvent
+    
+    def aistant_closeEvent(self, event):    
+        print("aistant_closeEvent", event)
+        self.aistant_workflow_thread_run_flag = False
 
     # show main window
     def Aistant_IDE_show(self):
@@ -526,13 +571,22 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.aistant_agent_req_thread.start()
 
     def Aistant_IDE_agent_block_exec(self, content_in):
-        prompt_in = self.agent_setting.aistant_ide_function_prompt + content_in
+        prompt_in = self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_function_prompt + content_in
         self.aistant_agent_working_flag = True
         self.Aistant_IDE_stream_openai_api_req(prompt_in)
+
+    def Asitant_IDE_agent_LLM_req(self, content_in):
+        print('Asitant_IDE_agent_LLM_req')
+        prompt_in = self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_function_prompt + content_in
+        self.aistant_agent_working_flag = True
+        content_out = self.Aistant_IDE_stream_openai_api_req(prompt_in)
+        return content_out
+
 
     def Aistant_IDE_stream_openai_api_req(self, prompt_in):
         self.statusbar_writer.write_signal.emit('openai request start.')
         agent_req_total_messages = []
+        response_content = ''
         try:
             user_question = {"role": "user", "content": ""}
             user_question['content'] = prompt_in
@@ -541,8 +595,8 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
             self.editor_req_stream_res = openai.ChatCompletion.create(
             model = 'gpt-3.5-turbo',
             messages = agent_req_total_messages,
-            temperature = self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_temperature,
-            max_tokens = self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_max_tokens,
+            temperature = self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempeture,
+            max_tokens = self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_max_token,
             stream=True
             )
             self.aistant_agent_output_writer.write_signal.emit('\n')
@@ -554,6 +608,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
                     # self.aistant_improve_thread.signal.emit(single_msg)
                     self.aistant_agent_output_writer.write_signal.emit(single_msg)
                     print(single_msg)
+                    response_content += single_msg
                     if self.aistant_agent_working_flag == False:
                         print('aistant_agent_working_flag is False, break.')
                         break
@@ -569,7 +624,8 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         if self.aistant_agent_working_flag == False:
             self.aistant_agent_working_flag = True
             self.statusbar_writer.write_signal.emit('Agent output stream quit.')
-        return ''
+
+        return response_content
     
     def aistant_public_UI_update(self, content_in):
         print('aistant_public_UI_update')
@@ -740,12 +796,24 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
     def aistant_workflow_run_exec(self):
         print('aistant_workflow_run_exec')
-    
+        self.aistant_workflow_active_status = True
+
     def aistant_workflow_stop_exec(self):
         print('aistant_workflow_stop_exec')
+        self.aistant_workflow_active_status = False
 
     def aistant_workflow_reset_exec(self):
         print('aistant_workflow_reset_exec')
+        self.aistant_workflow_active_status = False
+        self.current_agent_idx = 0
+
+    def aisatnt_update_block_color(self):
+        for item in self.agent_block_setting_list:
+            if item['block'].idx == self.current_agent_idx:
+                item['block'].update_selected(True)
+            else:
+                item['block'].update_selected(False)
+        self.aistant_graphics_scene.update()
 
 #workflow state machine
     def aistant_count_with_specified_input_idx(self, stem, input_idx):
@@ -776,19 +844,41 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
     #         else:
     #             print('aistant_workflow_load_task. Error: num_of_next_block != 1. Temporary suport one output.', num_of_next_block)
     #             break
+    # def aistant_single_agent_workflow_FSM(self):
+    #     print('aistant_single_agent_workflow_FSM')
+    #     len_of_workflow = len(self.aistant_ide_workflow)
+    #     if self.current_agent_num <= 0:
+    #         self.statusbar_writer.write_signal.emit('No Task in the workflow')
+    #         return
+    #     if self.aistant_ide_running_stage == AistantWorkFlowStatus.WF_START:
+    #         print('aistant_single_agent_workflow_FSM WF_START')
+    #         cur_agent_setting = self.agent_block_setting_list[self.current_agent_idx]['block_setting']
+
 
     def aistant_workflow_thread_exec(self):
         print('aistant_workflow_FSM')
+        while self.aistant_workflow_thread_run_flag:
+            time.sleep(0.1)
+            if self.aistant_workflow_active_status == False:
+                continue
 
-    def aistant_single_agent_workflow_FSM(self):
-        print('aistant_single_agent_workflow_FSM')
-        len_of_workflow = len(self.aistant_ide_workflow)
-        if self.current_agent_num <= 0:
-            self.statusbar_writer.write_signal.emit('No Task in the workflow')
-            return
-        if self.aistant_ide_running_status == AistantWorkFlowStatus.WF_START:
-            print('aistant_single_agent_workflow_FSM WF_START')
-            cur_agent_setting = self.agent_block_setting_list[self.current_agent_idx]['block_setting']
+            if len(self.agent_block_setting_list) <= 0:
+                continue
+            self.aistant_public_transferring_in_msg = self.aistant_public_transferring_out_msg
+            print('---- aistant current agent idx: ', self.current_agent_idx)
+            print('---- aistant_workflow_FSM while aistant_public_transferring_in_msg: ', self.aistant_public_transferring_in_msg)
+            self.aistant_public_transferring_out_msg = self.Asitant_IDE_agent_LLM_req(self.aistant_public_transferring_in_msg)
+            try:
+                print("next agent num: ", len(self.agent_block_setting_list[self.current_agent_idx]['block'].output_idx_list))
+                self.current_agent_idx = self.agent_block_setting_list[self.current_agent_idx]['block'].output_idx_list[0]
+                self.statusbar_writer.write_signal.emit('Workflow: ' + self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name)
+            except Exception as e:
+                self.current_agent_idx = 0
+                self.aistant_workflow_active_status = False
+                self.statusbar_writer.write_signal.emit('Workflow error. Reset workflow.')
+
+            self.aisatnt_update_block_color()
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
