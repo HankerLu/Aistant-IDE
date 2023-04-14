@@ -15,6 +15,7 @@ import threading
 import logging
 import os
 import math
+from enum import Enum
 
 log_num = 0
 for file in os.listdir():
@@ -23,6 +24,12 @@ for file in os.listdir():
 log_name = "aistant_ide_" + str(log_num) + ".log"
 print("log_name: ", log_name)
 logging.basicConfig(filename=log_name, level=logging.INFO)
+
+class AistantWorkFlowStatus(Enum):
+    WF_IDLE = 0
+    WF_EXEC = 1
+    WF_DONE = 2
+    WF_STOP = 3
 
 class Writer(QObject):
     write_signal = pyqtSignal(str)
@@ -480,6 +487,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.aistant_ide_workflow = []
         self.aistant_ide_workflow_pos = 0
         self.aistant_ide_workflow_item_num = 0
+        self.aistant_ide_running_status = AistantWorkFlowStatus.WF_IDLE
 
 # update public environment setting(openai, etc, ...)
         cur_public_key = self.public_setting.aistant_setting_public_get_cur_key_val()
@@ -726,6 +734,10 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
     def aistant_workflow_reset_exec(self):
         print('aistant_workflow_reset_exec')
+
+#workflow state machine
+    def aistant_workflow_FSM(self):
+        print('aistant_workflow_FSM')
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
