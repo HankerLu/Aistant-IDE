@@ -119,7 +119,14 @@
                 <item>
                  <widget class="QPushButton" name="pushButton_3">
                   <property name="text">
-                   <string>remove</string>
+                   <string>remove agent</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButton_8">
+                  <property name="text">
+                   <string>remove line</string>
                   </property>
                  </widget>
                 </item>

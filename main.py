@@ -296,6 +296,7 @@ class DiagramScene(QGraphicsScene):
                     item.setPen(QPen(Qt.black, 3.0))
 
     def mousePressEvent(self, event):
+        # print("DiagramScene:mousePressEvent")
         # print("DiagramScene:mousePressEvent", event.scenePos())
         item = self.itemAt(event.scenePos(), QTransform())
         # move item
@@ -446,6 +447,8 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
         self.ui.pushButton_12.clicked.connect(self.aistant_agent_save_config_from_ui_exec)
         self.ui.pushButton_2.clicked.connect(self.aistant_agent_load_config_from_default_exec)
+
+        self.ui.pushButton_8.clicked.connect(self.aistant_remove_line_exec)
 
 # init toggle execution
         self.aistant_show_public_setting_status = False
@@ -656,6 +659,18 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.agent_block_setting_list.pop(self.current_agent_num)
         self.current_agent_num -= 1
 
+#remove line 
+    def aistant_remove_line_exec(self):
+        print('aistant_remove_line_exec')
+        if self.aistant_graphics_scene.cur_line_path_arrow != None:
+            self.aistant_graphics_scene.cur_line_path_arrow.end_item.input_idx_list.remove(self.aistant_graphics_scene.cur_line_path_arrow.start_item.idx)
+            self.aistant_graphics_scene.removeItem(self.aistant_graphics_scene.cur_line_path_arrow)
+            self.aistant_graphics_scene.cur_line_path_arrow = None
+        if self.aistant_graphics_scene.cur_line_path_arrow_reverse != None:
+            self.aistant_graphics_scene.cur_line_path_arrow_reverse.end_item.input_idx_list.remove(self.aistant_graphics_scene.cur_line_path_arrow_reverse.start_item.idx)
+            self.aistant_graphics_scene.removeItem(self.aistant_graphics_scene.cur_line_path_arrow_reverse)
+            self.aistant_graphics_scene.cur_line_path_arrow_reverse = None
+        
 #update agent UI display
     def aistant_update_agent_UI(self):
         print('aistant_update_agent_UI')
