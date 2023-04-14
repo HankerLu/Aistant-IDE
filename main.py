@@ -700,6 +700,9 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
             self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_max_token = int(self.ui.lineEdit_4.text())
             self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_extern_link = self.ui.lineEdit_5.text()
             self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content = self.ui.textEdit.toPlainText()
+            
+            self.agent_block_setting_list[self.current_agent_idx]['block'].childItems().pop(0).setPlainText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name)
+
         except Exception as e:
             print('save config error. Error: ', e)
 
