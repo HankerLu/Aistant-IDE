@@ -101,10 +101,12 @@ class Connection(QGraphicsPathItem):
 
 class LinePathWithArrow(QGraphicsPathItem):
     def __init__(self, start_item = None, end_item = None, parent=None):
-        super(LinePathWithArrow, self).__init__(parent)
+        super(LinePathWithArrow, self).__init__(None)
         self.start_item = start_item
         self.end_item = end_item
         self.setZValue(-1)
+        self.setPen(QPen(Qt.black, 3))
+        self.parent = parent
     
     def set_start_edge(self, edge):
         self.start_edge = edge
@@ -248,7 +250,15 @@ class LinePathWithArrow(QGraphicsPathItem):
         elif min_distance == distances[3]:
             print("Released near the bottom edge")
             self.set_end_edge("bottom")
-    
+
+    def mousePressEvent(self, event):
+        print("DiagramConnection:mousePressEvent")
+        if self.contains(event.pos()):
+            print("-----DiagramConnection:mousePressEvent:contains")
+            # self.setPen(QPen(Qt.red, 2.5))
+            # self.parent.cur_line_path_arrow = self
+            self.parent.selectLinePathWithArrow(self)
+
 class DiagramScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(None)
@@ -259,7 +269,31 @@ class DiagramScene(QGraphicsScene):
         self.connection = None
         self.line_path_arrow = None
         self.last_clicked_item_idx = 0
+        self.cur_line_path_arrow = None
+        self.cur_line_path_arrow_reverse = None
         self.parent = parent
+
+    def findReverseConnection(self, item_in):
+        if item_in == None or type(item_in) != LinePathWithArrow:
+            return None
+        for item in self.items():
+            if isinstance(item, LinePathWithArrow) \
+            and item_in.start_item.idx == item.end_item.idx and item_in.end_item.idx == item.start_item.idx:
+                return item
+        return None
+
+    def selectLinePathWithArrow(self, line_path_arrow):
+        print("DiagramScene:selectLinePathWithArrow")
+        self.cur_line_path_arrow = line_path_arrow
+        self.cur_line_path_arrow.setPen(QPen(Qt.red, 4.0))
+        self.cur_line_path_arrow_reverse = self.findReverseConnection(self.cur_line_path_arrow)
+        if self.cur_line_path_arrow_reverse != None:
+            print("DiagramScene:selectLinePathWithArrow:reverse found")
+            self.cur_line_path_arrow_reverse.setPen(QPen(Qt.red, 4.0))
+        for item in self.items():
+            if isinstance(item, LinePathWithArrow):
+                if item != self.cur_line_path_arrow and item != self.cur_line_path_arrow_reverse:
+                    item.setPen(QPen(Qt.black, 3.0))
 
     def mousePressEvent(self, event):
         # print("DiagramScene:mousePressEvent", event.scenePos())
@@ -287,7 +321,7 @@ class DiagramScene(QGraphicsScene):
             self.end_item = None
             self.connection = None
             self.line_connecting = True
-            self.line_path_arrow = LinePathWithArrow(item)
+            self.line_path_arrow = LinePathWithArrow(item, None, self)
             self.line_path_arrow.update_start_edge(event.scenePos())
             self.addItem(self.line_path_arrow)
 

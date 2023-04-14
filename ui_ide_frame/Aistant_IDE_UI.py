@@ -208,7 +208,7 @@ class Ui_MainWindow(object):
         self.pushButton_6.setText(_translate("MainWindow", "Show Public Setting"))
         self.label_6.setText(_translate("MainWindow", "public output"))
         self.pushButton.setText(_translate("MainWindow", "add agent"))
-        self.pushButton_3.setText(_translate("MainWindow", "remove agent"))
+        self.pushButton_3.setText(_translate("MainWindow", "remove"))
         self.pushButton_4.setText(_translate("MainWindow", "clear"))
         self.pushButton_12.setText(_translate("MainWindow", "Save setting"))
         self.pushButton_2.setText(_translate("MainWindow", "Recover default"))
