@@ -27,9 +27,10 @@ logging.basicConfig(filename=log_name, level=logging.INFO)
 
 class AistantWorkFlowStatus(Enum):
     WF_IDLE = 0
-    WF_EXEC = 1
-    WF_DONE = 2
-    WF_STOP = 3
+    WF_START = 1
+    WF_EXEC = 2
+    WF_DONE = 3
+    WF_STOP = 4
 
 class Writer(QObject):
     write_signal = pyqtSignal(str)
@@ -64,6 +65,7 @@ class Block(QGraphicsItem):
         print("Block:__init__", idx)
         self.idx = idx
         self.input_idx_list = []
+        self.output_idx_list = []
         self.x = x
         self.y = y
         self.width = width
@@ -86,6 +88,9 @@ class Block(QGraphicsItem):
 
     def reg_new_input(self, input_idx):
         self.input_idx_list.append(input_idx)
+
+    def reg_new_output(self, output_idx):
+        self.output_idx_list.append(output_idx)
 
 class Connection(QGraphicsPathItem):
     def __init__(self, start_item, end_item):
@@ -192,6 +197,7 @@ class LinePathWithArrow(QGraphicsPathItem):
     
     def set_end_item(self, item):
         self.end_item = item
+        self.start_item.reg_new_output(self.end_item.idx)
         self.end_item.reg_new_input(self.start_item.idx)
     
     def update_start_edge(self, e_pos):
@@ -405,7 +411,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.ui = ui
 
         self.agent_setting = Aistant_IDE_setting_manage.Aistant_Agent_Setting()
-
+        self.agent_setting.aistant_ide_run_handle = self.aistant_agent_req_trig
         self.public_setting = Aistant_IDE_setting_manage.Aistant_Public_Setting()
 
         self.current_agent_idx = 0
@@ -487,6 +493,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.aistant_ide_workflow = []
         self.aistant_ide_workflow_pos = 0
         self.aistant_ide_workflow_item_num = 0
+        self.aistant_first_task_item = None
         self.aistant_ide_running_status = AistantWorkFlowStatus.WF_IDLE
 
 # update public environment setting(openai, etc, ...)
@@ -736,8 +743,50 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         print('aistant_workflow_reset_exec')
 
 #workflow state machine
+    def aistant_count_with_specified_input_idx(self, stem, input_idx):
+        print('aistant_count_with_specified_input_idx')
+        num_of_block = stem.input_idx_list.count(input_idx)
+        return num_of_block
+
+    def aistant_workflow_initial_first_task(self):
+        print('aistant_workflow_initial_first_task')
+
+    def aistant_workflow_load_task(self):
+        print('aistant_workflow_load_task')
+        self.aistant_ide_workflow = []
+        tmp_agent_idx = self.current_agent_idx
+        tmp_agent_setting = self.agent_block_setting_list[self.current_agent_idx]['block_setting']
+        self.aistant_ide_workflow.append(tmp_agent_setting)
+        for item in self.agent_block_setting_list:
+            block = item['block']
+            block_setting = item['block_setting']
+            if block.idx == tmp_agent_idx:
+                continue
+            num_of_next_block = self.aistant_count_with_specified_input_idx(block, tmp_agent_idx)
+            if num_of_next_block == 1:
+                tmp_agent_idx = block.idx
+                tmp_agent_setting = block_setting
+                self.aistant_ide_workflow.append(block_setting)
+                print('aistant_workflow_load_task: ', block_setting.aistant_ide_agent_name, 'idx:', block.idx)
+            else:
+                print('aistant_workflow_load_task. Error: num_of_next_block != 1. Temporary suport one output.', num_of_next_block)
+                break
+            
+
+            
+
     def aistant_workflow_FSM(self):
         print('aistant_workflow_FSM')
+
+    def aistant_single_agent_workflow_FSM(self):
+        print('aistant_single_agent_workflow_FSM')
+        len_of_workflow = len(self.aistant_ide_workflow)
+        if self.current_agent_num <= 0:
+            self.statusbar_writer.write_signal.emit('No Task in the workflow')
+            return
+        if self.aistant_ide_running_status == AistantWorkFlowStatus.WF_START:
+            print('aistant_single_agent_workflow_FSM WF_START')
+            cur_agent_setting = self.agent_block_setting_list[self.current_agent_idx]['block_setting']
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
