@@ -680,6 +680,9 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
                 for i in range(len(item.input_idx_list)):
                     if item.input_idx_list[i] == self.current_agent_idx:
                         item.input_idx_list[i] = -1
+                for i in range(len(item.output_idx_list)):
+                    if item.output_idx_list[i] == self.current_agent_idx:
+                        item.output_idx_list[i] = -1
         self.agent_block_setting_list.pop(self.current_agent_idx)
         self.current_agent_num -= 1
 
@@ -688,10 +691,12 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         print('aistant_remove_line_exec')
         if self.aistant_graphics_scene.cur_line_path_arrow != None:
             self.aistant_graphics_scene.cur_line_path_arrow.end_item.input_idx_list.remove(self.aistant_graphics_scene.cur_line_path_arrow.start_item.idx)
+            self.aistant_graphics_scene.cur_line_path_arrow.start_item.output_idx_list.remove(self.aistant_graphics_scene.cur_line_path_arrow.end_item.idx)
             self.aistant_graphics_scene.removeItem(self.aistant_graphics_scene.cur_line_path_arrow)
             self.aistant_graphics_scene.cur_line_path_arrow = None
         if self.aistant_graphics_scene.cur_line_path_arrow_reverse != None:
             self.aistant_graphics_scene.cur_line_path_arrow_reverse.end_item.input_idx_list.remove(self.aistant_graphics_scene.cur_line_path_arrow_reverse.start_item.idx)
+            self.aistant_graphics_scene.cur_line_path_arrow_reverse.start_item.output_idx_list.remove(self.aistant_graphics_scene.cur_line_path_arrow_reverse.end_item.idx)
             self.aistant_graphics_scene.removeItem(self.aistant_graphics_scene.cur_line_path_arrow_reverse)
             self.aistant_graphics_scene.cur_line_path_arrow_reverse = None
         
@@ -771,8 +776,6 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
             else:
                 print('aistant_workflow_load_task. Error: num_of_next_block != 1. Temporary suport one output.', num_of_next_block)
                 break
-            
-
             
 
     def aistant_workflow_FSM(self):
