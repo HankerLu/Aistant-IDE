@@ -656,7 +656,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
             print('no agent to remove')
             return
         self.aistant_y_delta -= (self.aistant_default_block_geo_config[3] + 5)
-        self.aistant_graphics_scene.removeItem(self.agent_block_setting_list[self.current_agent_num]['block'])
+        self.aistant_graphics_scene.removeItem(self.agent_block_setting_list[self.current_agent_idx]['block'])
         # self.aistant_graphics_scene.removeItem(self.agent_block_setting_list[self.current_agent_num]['block'].text_item)
         # delete connection and patharrow of aistant_graphics_scene
         # for i in range(len(self.aistant_graphics_scene.items())):
@@ -666,14 +666,14 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         #             self.aistant_graphics_scene.removeItem(self.aistant_graphics_scene.items()[i])
         for item in self.aistant_graphics_scene.items(): 
             if type(item) == Connection or type(item) == LinePathWithArrow:
-                if item.start_item == self.agent_block_setting_list[self.current_agent_num]['block'] \
-                or item.end_item == self.agent_block_setting_list[self.current_agent_num]['block']:
+                if item.start_item == self.agent_block_setting_list[self.current_agent_idx]['block'] \
+                or item.end_item == self.agent_block_setting_list[self.current_agent_idx]['block']:
                     self.aistant_graphics_scene.removeItem(item)
             elif type(item) == Block:
                 for i in range(len(item.input_idx_list)):
-                    if item.input_idx_list[i] == self.current_agent_num:
+                    if item.input_idx_list[i] == self.current_agent_idx:
                         item.input_idx_list[i] = -1
-        self.agent_block_setting_list.pop(self.current_agent_num)
+        self.agent_block_setting_list.pop(self.current_agent_idx)
         self.current_agent_num -= 1
 
 #remove line 
