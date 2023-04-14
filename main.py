@@ -858,7 +858,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
     def aistant_workflow_thread_exec(self):
         print('aistant_workflow_FSM')
         while self.aistant_workflow_thread_run_flag:
-            time.sleep(0.1)
+            time.sleep(2)
             if self.aistant_workflow_active_status == False:
                 continue
 
