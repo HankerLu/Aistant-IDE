@@ -585,7 +585,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
     def aistant_public_setting_show_toggle_exec(self):
         print('aistant_public_setting_show_toggle_exec')
         if self.aistant_show_public_setting_status == False:
-            self.ui.label_9.setVisible(True)
+            # self.ui.label_9.setVisible(True)
             self.ui.label_10.setVisible(True)
             self.ui.textEdit_3.setVisible(True)
             self.ui.label_7.setVisible(True)
@@ -595,7 +595,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
             self.ui.pushButton_6.setText('Hide')
             self.aistant_show_public_setting_status = True
         else:
-            self.ui.label_9.setVisible(False)
+            # self.ui.label_9.setVisible(False)
             self.ui.label_10.setVisible(False)
             self.ui.textEdit_3.setVisible(False)
             self.ui.label_7.setVisible(False)
