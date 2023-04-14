@@ -450,6 +450,10 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
         self.ui.pushButton_8.clicked.connect(self.aistant_remove_line_exec)
 
+        self.ui.pushButton_9.clicked.connect(self.aistant_workflow_run_exec)
+        self.ui.pushButton_10.clicked.connect(self.aistant_workflow_stop_exec)
+        self.ui.pushButton_11.clicked.connect(self.aistant_workflow_reset_exec)
+
 # init toggle execution
         self.aistant_show_public_setting_status = False
         self.aistant_password_mode = True
@@ -471,6 +475,11 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         text_item.setY(self.current_block.boundingRect().center().y() - text_item.boundingRect().height()/2)
 
         self.aistant_update_agent_UI()
+
+# AI workflow
+        self.aistant_ide_workflow = []
+        self.aistant_ide_workflow_pos = 0
+        self.aistant_ide_workflow_item_num = 0
 
 # update public environment setting(openai, etc, ...)
         cur_public_key = self.public_setting.aistant_setting_public_get_cur_key_val()
@@ -708,6 +717,15 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
     def aistant_agent_load_config_from_default_exec(self):
         print('aistant_agent_load_config_from_default_exec')
+
+    def aistant_workflow_run_exec(self):
+        print('aistant_workflow_run_exec')
+    
+    def aistant_workflow_stop_exec(self):
+        print('aistant_workflow_stop_exec')
+
+    def aistant_workflow_reset_exec(self):
+        print('aistant_workflow_reset_exec')
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

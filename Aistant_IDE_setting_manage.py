@@ -19,6 +19,8 @@ class Aistant_Agent_Setting():
 
         self.aistant_ide_tempory_output_content = ''
 
+        self.aistant_ide_run_handle = None
+
 # UI option complete list 
         self.chat_model_dict = [
         {'company':'openai', 'model':'gpt-3.5-turbo', 'type': 'Chat'},
