@@ -2,7 +2,7 @@
 import json
 import os
 class Aistant_Agent_Setting():
-    def __init__(self, name = 'Agent_0'):
+    def __init__(self, idx = -1, name = 'Agent_0'):
         print("Aistant_Setting init.")
 
         self.aistant_ide_agent_name = name
@@ -20,6 +20,12 @@ class Aistant_Agent_Setting():
         self.aistant_ide_tempory_output_content = ''
 
         self.aistant_ide_run_handle = None
+
+        self.aistant_ide_self_agent_idx = idx
+
+        self.aistant_ide_input_agent_idx = -1
+
+        self.aistant_ide_output_agent_idx = -1
 
 # UI option complete list 
         self.chat_model_dict = [

@@ -410,11 +410,11 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.mainwin = Mainwindw
         self.ui = ui
 
-        self.agent_setting = Aistant_IDE_setting_manage.Aistant_Agent_Setting()
-        self.agent_setting.aistant_ide_run_handle = self.aistant_agent_req_trig
-        self.public_setting = Aistant_IDE_setting_manage.Aistant_Public_Setting()
 
         self.current_agent_idx = 0
+        self.agent_setting = Aistant_IDE_setting_manage.Aistant_Agent_Setting(self.current_agent_idx)
+        self.agent_setting.aistant_ide_run_handle = self.aistant_agent_req_trig
+        self.public_setting = Aistant_IDE_setting_manage.Aistant_Public_Setting()
 
         self.aistant_default_block_geo_config = (0, 0, 120, 50)
         self.current_block = Block(self.aistant_default_block_geo_config[0], 
@@ -643,7 +643,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
                             self.aistant_default_block_geo_config[3], Qt.black, self.current_agent_num)
         self.aistant_graphics_scene.addItem(new_block)
         new_setting_name = 'Agent_' + str(self.current_agent_num)
-        new_setting = Aistant_IDE_setting_manage.Aistant_Agent_Setting(new_setting_name)
+        new_setting = Aistant_IDE_setting_manage.Aistant_Agent_Setting(self.current_agent_num, new_setting_name)
 
         new_agent_block_item = {'block': new_block, 'block_setting': new_setting}
         self.agent_block_setting_list.append(new_agent_block_item)
@@ -753,32 +753,31 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         num_of_block = stem.input_idx_list.count(input_idx)
         return num_of_block
 
-    def aistant_workflow_initial_first_task(self):
-        print('aistant_workflow_initial_first_task')
+    # def aistant_workflow_initial_first_task(self):
+    #     print('aistant_workflow_initial_first_task')
 
-    def aistant_workflow_load_task(self):
-        print('aistant_workflow_load_task')
-        self.aistant_ide_workflow = []
-        tmp_agent_idx = self.current_agent_idx
-        tmp_agent_setting = self.agent_block_setting_list[self.current_agent_idx]['block_setting']
-        self.aistant_ide_workflow.append(tmp_agent_setting)
-        for item in self.agent_block_setting_list:
-            block = item['block']
-            block_setting = item['block_setting']
-            if block.idx == tmp_agent_idx:
-                continue
-            num_of_next_block = self.aistant_count_with_specified_input_idx(block, tmp_agent_idx)
-            if num_of_next_block == 1:
-                tmp_agent_idx = block.idx
-                tmp_agent_setting = block_setting
-                self.aistant_ide_workflow.append(block_setting)
-                print('aistant_workflow_load_task: ', block_setting.aistant_ide_agent_name, 'idx:', block.idx)
-            else:
-                print('aistant_workflow_load_task. Error: num_of_next_block != 1. Temporary suport one output.', num_of_next_block)
-                break
-            
+    # def aistant_workflow_load_task(self):
+    #     print('aistant_workflow_load_task')
+    #     self.aistant_ide_workflow = []
+    #     tmp_agent_idx = self.current_agent_idx
+    #     tmp_agent_setting = self.agent_block_setting_list[self.current_agent_idx]['block_setting']
+    #     self.aistant_ide_workflow.append(tmp_agent_setting)
+    #     for item in self.agent_block_setting_list:
+    #         block = item['block']
+    #         block_setting = item['block_setting']
+    #         if block.idx == tmp_agent_idx:
+    #             continue
+    #         num_of_next_block = self.aistant_count_with_specified_input_idx(block, tmp_agent_idx)
+    #         if num_of_next_block == 1:
+    #             tmp_agent_idx = block.idx
+    #             tmp_agent_setting = block_setting
+    #             self.aistant_ide_workflow.append(block_setting)
+    #             print('aistant_workflow_load_task: ', block_setting.aistant_ide_agent_name, 'idx:', block.idx)
+    #         else:
+    #             print('aistant_workflow_load_task. Error: num_of_next_block != 1. Temporary suport one output.', num_of_next_block)
+    #             break
 
-    def aistant_workflow_FSM(self):
+    def aistant_workflow_thread_exec(self):
         print('aistant_workflow_FSM')
 
     def aistant_single_agent_workflow_FSM(self):
