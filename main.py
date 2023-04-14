@@ -94,7 +94,7 @@ class Connection(QGraphicsPathItem):
         path = QPainterPath(start_pos)
         path.lineTo(end_pos)
         self.setPath(path)
-        print("Connection:update_path", start_pos, end_pos)
+        # print("Connection:update_path", start_pos, end_pos)
 
     def paint(self, painter, option, widget):
         self.update_path()
@@ -298,6 +298,10 @@ class DiagramScene(QGraphicsScene):
             # print("DiagramScene:mouseMoveEvent")
             super().mouseMoveEvent(event)
             self.connection.update_path()
+            for item in self.items():
+                if isinstance(item, LinePathWithArrow):
+                    if item.start_item == self.start_item or item.end_item == self.start_item:
+                        item.update_path_with_both_item()
         elif self.line_connecting:
             # print("DiagramScene:mouseMoveEvent: line_connecting")
             self.line_path_arrow.update_path_by_end_pos(event.scenePos())
