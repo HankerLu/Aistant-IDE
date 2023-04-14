@@ -186,6 +186,38 @@ class LinePathWithArrow(QGraphicsPathItem):
         self.end_item.reg_new_input(self.start_item.idx)
         self.update_path_with_both_item()
     
+    def update_start_edge(self, e_pos):
+        item_pos = self.mapFromItem(self.start_item, 0, 0)
+        item_edge_left = item_pos.x()
+        item_edge_right = item_pos.x() + self.start_item.width
+        item_edge_top = item_pos.y()
+        item_edge_bottom = item_pos.y() + self.start_item.height
+        print("---------", 
+                item_edge_left, item_edge_right, item_edge_top, item_edge_bottom,
+                item_pos.x(), item_pos.y(), self.start_item.width, self.start_item.height)
+        distances = [
+            abs(e_pos.x() - item_edge_left),
+            abs(e_pos.x() - item_edge_right),
+            abs(e_pos.y() - item_edge_top),
+            abs(e_pos.y() - item_edge_bottom)
+        ]
+        for i in range(len(distances)):
+            print(distances[i])
+        min_distance = min(distances)
+        # find the closest edge
+        if min_distance == distances[0]:
+            print("Clicked near the left edge")
+            self.set_start_edge("left")
+        elif min_distance == distances[1]:
+            print("Clicked near the right edge")
+            self.set_start_edge("right")
+        elif min_distance == distances[2]:
+            print("Clicked near the top edge")
+            self.set_start_edge("top")
+        elif min_distance == distances[3]:
+            print("Clicked near the bottom edge")
+            self.set_start_edge("bottom")
+    
 class DiagramScene(QGraphicsScene):
     def __init__(self, parent=None):
         super().__init__(None)
@@ -225,28 +257,7 @@ class DiagramScene(QGraphicsScene):
             self.connection = None
             self.line_connecting = True
             self.line_path_arrow = LinePathWithArrow(item)
-            distances = [
-                abs(event.scenePos().x() - item.boundingRect().left()),
-                abs(event.scenePos().x() - item.boundingRect().right()),
-                abs(event.scenePos().y() - item.boundingRect().top()),
-                abs(event.scenePos().y() - item.boundingRect().bottom())
-            ]
-            for i in range(len(distances)):
-                print(distances[i])
-            min_distance = min(distances)
-            # find the closest edge
-            if min_distance == distances[0]:
-                print("Clicked near the left edge")
-                self.line_path_arrow.set_start_edge("left")
-            elif min_distance == distances[1]:
-                print("Clicked near the right edge")
-                self.line_path_arrow.set_start_edge("right")
-            elif min_distance == distances[2]:
-                print("Clicked near the top edge")
-                self.line_path_arrow.set_start_edge("top")
-            elif min_distance == distances[3]:
-                print("Clicked near the bottom edge")
-                self.line_path_arrow.set_start_edge("bottom")
+            self.line_path_arrow.update_start_edge(event.scenePos())
             self.addItem(self.line_path_arrow)
 
         super().mousePressEvent(event)
