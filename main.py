@@ -793,7 +793,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
             self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempeture = float(self.ui.lineEdit_2.text())
             self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_max_token = int(self.ui.lineEdit_4.text())
             self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_extern_link = self.ui.lineEdit_5.text()
-            self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content = self.ui.textEdit.toPlainText()
+            # self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content = self.ui.textEdit.toPlainText()
             
             self.agent_block_setting_list[self.current_agent_idx]['block'].childItems().pop(0).setPlainText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name)
 
@@ -874,7 +874,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
             cnt += 1
             self.aisatnt_update_block_color()
-            self.aistant_public_transferring_in_msg = 'Hello'
+            self.aistant_public_transferring_in_msg = ''
 
             print('---- aistant current agent idx: ', self.current_agent_idx)
             print('---- aistant_workflow_FSM while aistant_public_transferring_in_msg: ', self.aistant_public_transferring_in_msg)
