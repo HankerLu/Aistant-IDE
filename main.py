@@ -440,7 +440,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.agent_setting.aistant_ide_run_handle = self.aistant_agent_req_trig
         self.public_setting = Aistant_IDE_setting_manage.Aistant_Public_Setting()
 
-        self.aistant_default_block_geo_config = (0, 0, 120, 50)
+        self.aistant_default_block_geo_config = (0, 0, 140, 50)
         self.current_block = Block(self.aistant_default_block_geo_config[0], 
                                    self.aistant_default_block_geo_config[1], 
                                    self.aistant_default_block_geo_config[2], 
@@ -796,6 +796,9 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
             # self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content = self.ui.textEdit.toPlainText()
             
             self.agent_block_setting_list[self.current_agent_idx]['block'].childItems().pop(0).setPlainText(self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name)
+            child_text_item = self.agent_block_setting_list[self.current_agent_idx]['block'].childItems().pop(0)
+            child_text_item.setX(self.agent_block_setting_list[self.current_agent_idx]['block'].boundingRect().center().x() - child_text_item.boundingRect().width()/2)
+            child_text_item.setY(self.agent_block_setting_list[self.current_agent_idx]['block'].boundingRect().center().y() - child_text_item.boundingRect().height()/2)
 
         except Exception as e:
             print('save config error. Error: ', e)
