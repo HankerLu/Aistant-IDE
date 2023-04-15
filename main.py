@@ -459,8 +459,11 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         self.statusbar_writer.write_signal.connect(self.ui.statusbar.showMessage)
         self.ui.statusbar.showMessage('Load Aistant IDE completed.')
 
-        self.aistant_agent_output_writer = Writer()
-        self.aistant_agent_output_writer.write_signal.connect(self.aistant_agent_output_stream_display_exec)
+        self.aistant_agent_output_ref_writer = Writer()
+        self.aistant_agent_output_ref_writer.write_signal.connect(self.aistant_agent_output_stream_display_ref_exec)
+
+        self.aistant_agent_output_abs_writer = Writer()
+        self.aistant_agent_output_abs_writer.write_signal.connect(self.aistant_agent_output_stream_display_abs_exec)
 
         self.aistant_public_output_writer = Writer()
         self.aistant_public_output_writer.write_signal.connect(self.aistant_public_display_exec)
@@ -558,13 +561,16 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
     def aistant_agent_update_ui_with_output(self, content):
         print("aistant_agent_update_ui_with_output: ", content)
 
-    def aistant_agent_output_stream_display_exec(self, content):
+    def aistant_agent_output_stream_display_ref_exec(self, content):
         cursor = self.ui.textEdit.textCursor()
         cursor.setPosition(len(self.ui.textEdit.toPlainText()))
         cursor.insertText(content)
         cursor.setPosition(len(self.ui.textEdit.toPlainText()))
         self.ui.textEdit.setTextCursor(cursor)
-        self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content = self.ui.textEdit.toPlainText()
+        # self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content = self.ui.textEdit.toPlainText()
+
+    def aistant_agent_output_stream_display_abs_exec(self, content):
+        self.ui.textEdit.setText(content)
 
     def aistant_agent_req_trig(self):
         print('aistant_agent_req_trig')
@@ -580,8 +586,10 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         prompt_in = self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_function_prompt + content_in
         self.aistant_agent_working_flag = True
         content_out = self.Aistant_IDE_stream_openai_api_req(prompt_in)
-        return content_out
-
+        ret_req = True
+        if  content_out == 'error':
+            ret_req = False
+        return ret_req, content_out
 
     def Aistant_IDE_stream_openai_api_req(self, prompt_in):
         self.statusbar_writer.write_signal.emit('openai request start.')
@@ -599,14 +607,14 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
             max_tokens = self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_max_token,
             stream=True
             )
-            self.aistant_agent_output_writer.write_signal.emit('\n')
+            self.aistant_agent_output_abs_writer.write_signal.emit('\n')
 
             try:
                 for chunk in self.editor_req_stream_res:
                     chunk_message = chunk['choices'][0]['delta']  # extract the message
                     single_msg = chunk_message.get('content', '')
                     # self.aistant_improve_thread.signal.emit(single_msg)
-                    self.aistant_agent_output_writer.write_signal.emit(single_msg)
+                    self.aistant_agent_output_ref_writer.write_signal.emit(single_msg)
                     print(single_msg)
                     response_content += single_msg
                     if self.aistant_agent_working_flag == False:
@@ -620,6 +628,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
             logging.info("aistant_stream_openai_api_req error")
             print("aistant_stream_openai_api_req error", e)
             self.statusbar_writer.write_signal.emit('Agent output stream error.')
+            response_content = 'error'
         
         if self.aistant_agent_working_flag == False:
             self.aistant_agent_working_flag = True
@@ -857,27 +866,35 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
     def aistant_workflow_thread_exec(self):
         print('aistant_workflow_FSM')
+        cnt = 0
         while self.aistant_workflow_thread_run_flag:
-            time.sleep(2)
-            if self.aistant_workflow_active_status == False:
+            if self.aistant_workflow_active_status == False or len(self.agent_block_setting_list) <= 0:
+                time.sleep(0.1)
                 continue
 
-            if len(self.agent_block_setting_list) <= 0:
-                continue
-            self.aistant_public_transferring_in_msg = self.aistant_public_transferring_out_msg
+            cnt += 1
+            self.aisatnt_update_block_color()
+            self.aistant_public_transferring_in_msg = 'Hello'
+
             print('---- aistant current agent idx: ', self.current_agent_idx)
             print('---- aistant_workflow_FSM while aistant_public_transferring_in_msg: ', self.aistant_public_transferring_in_msg)
-            self.aistant_public_transferring_out_msg = self.Asitant_IDE_agent_LLM_req(self.aistant_public_transferring_in_msg)
+            ret, self.aistant_public_transferring_out_msg = self.Asitant_IDE_agent_LLM_req(self.aistant_public_transferring_in_msg)
             try:
-                print("next agent num: ", len(self.agent_block_setting_list[self.current_agent_idx]['block'].output_idx_list))
-                self.current_agent_idx = self.agent_block_setting_list[self.current_agent_idx]['block'].output_idx_list[0]
-                self.statusbar_writer.write_signal.emit('Workflow: ' + self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name)
+                if ret == True:
+                    print("next agent num: ", len(self.agent_block_setting_list[self.current_agent_idx]['block'].output_idx_list))
+                    self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_tempory_output_content += self.aistant_public_transferring_out_msg
+                    self.statusbar_writer.write_signal.emit('Workflow: ' + self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_agent_name)
+                    self.aistant_public_UI_update(self.aistant_public_transferring_out_msg)
+
+#switch to next agent
+                    self.current_agent_idx = self.agent_block_setting_list[self.current_agent_idx]['block'].output_idx_list[0]
+
             except Exception as e:
                 self.current_agent_idx = 0
                 self.aistant_workflow_active_status = False
                 self.statusbar_writer.write_signal.emit('Workflow error. Reset workflow.')
 
-            self.aisatnt_update_block_color()
+            time.sleep(20)
 
 
 if __name__ == "__main__":
