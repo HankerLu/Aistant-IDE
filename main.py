@@ -547,6 +547,9 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
         self.ui.lineEdit_3.setText(openai.api_key)
 
+        self.aistant_input_content_used = True
+        # self.aistant_input_content = self.ui.plainTextEdit.toPlainText()
+
 # closs event
         self.mainwin.closeEvent = self.aistant_closeEvent
     
@@ -583,9 +586,8 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
     def Asitant_IDE_agent_LLM_req(self, content_in):
         print('Asitant_IDE_agent_LLM_req')
-        prompt_in = self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_function_prompt + content_in
         self.aistant_agent_working_flag = True
-        content_out = self.Aistant_IDE_stream_openai_api_req(prompt_in)
+        content_out = self.Aistant_IDE_stream_openai_api_req(content_in)
         ret_req = True
         if  content_out == 'error':
             ret_req = False
@@ -676,7 +678,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         if self.aistant_show_public_setting_status == False:
             # self.ui.label_9.setVisible(True)
             self.ui.label_10.setVisible(True)
-            self.ui.textEdit_3.setVisible(True)
+            self.ui.plainTextEdit_2.setVisible(True)
             self.ui.label_7.setVisible(True)
             self.ui.lineEdit_3.setVisible(True)
             self.ui.pushButton_5.setVisible(True)
@@ -686,7 +688,7 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
         else:
             # self.ui.label_9.setVisible(False)
             self.ui.label_10.setVisible(False)
-            self.ui.textEdit_3.setVisible(False)
+            self.ui.plainTextEdit_2.setVisible(False)
             self.ui.label_7.setVisible(False)
             self.ui.lineEdit_3.setVisible(False)
             self.ui.pushButton_5.setVisible(False)
@@ -877,7 +879,11 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
             cnt += 1
             self.aisatnt_update_block_color()
-            self.aistant_public_transferring_in_msg = ''
+            if self.aistant_input_content_used == False:
+                self.aistant_public_transferring_in_msg = self.agent_block_setting_list[self.current_agent_idx]['block_setting'].aistant_ide_function_prompt + self.aistant_public_transferring_out_msg
+            else:
+                self.aistant_public_transferring_in_msg = self.ui.plainTextEdit_2.toPlainText()
+                self.aistant_input_content_used = False
 
             print('---- aistant current agent idx: ', self.current_agent_idx)
             print('---- aistant_workflow_FSM while aistant_public_transferring_in_msg: ', self.aistant_public_transferring_in_msg)

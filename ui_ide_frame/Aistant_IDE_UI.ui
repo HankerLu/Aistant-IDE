@@ -47,7 +47,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QTextEdit" name="textEdit_3"/>
+               <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
               </item>
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_5">
