@@ -16,6 +16,7 @@ import os
 import math
 import time
 from enum import Enum
+from collections import deque
 
 log_num = 0
 for file in os.listdir():
@@ -905,6 +906,39 @@ class Aistant_IDE(Aistant_IDE_UI.Ui_MainWindow):
 
             time.sleep(20)
 
+#language processing meta function
+    def Aistant_str_process_split_return(self, input_str):
+        print('Aistant_str_process_split_and_create_list')
+        output_list = input_str.split("\n") if "\n" in input_str else [input_str]
+        return output_list
+    
+    def Aistant_add_key_to_list(self, input_list, list_key_name):
+        print('Aistant_add_key_to_list')
+        return [{list_key_name: output_item} for output_item in input_list]    
+        
+    def Aistant_parse_id_and_content_for_deque(self, input_list, output_deque, id_key, content_key):
+        print('Aistant_parse_id_and_content_for_list')
+        for input_item in input_list:
+            input_item_parts = input_item.strip().split(".", 1)
+            if len(input_item_parts) == 2:
+                task_id = input_item_parts[0].strip()
+                task_name = input_item_parts[1].strip()
+                output_deque.append({id_key: task_id, content_key: task_name})
+    
+#language processing external function(str in str out)
+    def Aistant_timesleep_for_seconds(self, seconds):
+        print('Aistant_timesleep_for_seconds')
+        time.sleep(seconds)
+
+    def Aistant_str_split_return_and_join_to_str(self, input_str, output_str):
+        print('Aistant_str_split_return_and_join')
+        output_list = input_str.split("\n") if "\n" in input_str else [input_str]
+        return output_str.join(output_list)
+    
+    def Aistant_str_split_return_and_get_list(self, input_str):
+        print('Aistant_str_split_return_and_get_list')
+        output_list = input_str.split("\n") if "\n" in input_str else [input_str]
+        return output_list
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
